@@ -1,0 +1,3 @@
+[submodule "invocation-examples/Basic"]
+	path = invocation-examples/Basic
+	url = https://github.com/landingzone-sandbox/iac-deploy-tf-az-example-resource-group.git
