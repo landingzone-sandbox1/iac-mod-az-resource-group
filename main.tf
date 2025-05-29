@@ -1,6 +1,6 @@
 resource "azurerm_resource_group" "this" {
   location = var.location
-  name     = "${local.service_code_rsg}-CUS-${var.application_code}-${var.environment}"
+  name     = "${local.service_code_rsg}-${var.region_code}-${var.application_code}-${var.environment}"
   tags     = var.tags
 }
 resource "azurerm_management_lock" "this" {

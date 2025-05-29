@@ -15,7 +15,11 @@ variable "environment" {
   description = "Required. Application environment (P, C, D, F, E)."
   nullable    = false
 }
-
+variable "region_code" {
+  type        = string
+  description = "Region code (e.g., 'EU2'for EastUS2)."
+  nullable    = false
+}
 variable "lock" {
   type = object({
     kind = string
