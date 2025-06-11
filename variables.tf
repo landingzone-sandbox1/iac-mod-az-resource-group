@@ -20,12 +20,16 @@ variable "region_code" {
   description = "Region code (e.g., 'EU2'for EastUS2)."
   nullable    = false
 }
+
 variable "lock" {
   type = object({
-    kind = string
+    kind = optional(string, "ReadOnly")
     name = optional(string, null)
   })
-  default     = null
+  default = {
+    kind = "ReadOnly"
+    name = null
+  }
   description = <<DESCRIPTION
   Controls the Resource Lock configuration for this resource. The following properties can be specified:
   
@@ -38,9 +42,13 @@ variable "lock" {
     error_message = "Lock kind must be either `\"CanNotDelete\"` or `\"ReadOnly\"`."
   }
 }
-
 variable "tags" {
   type        = map(string)
   default     = null
   description = "(Optional) Tags of the resource."
+}
+
+variable "correlative" {
+  description = "Correlative or sequence identifier for the resource group."
+  type        = string
 }
