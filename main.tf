@@ -1,3 +1,7 @@
+terraform {
+  required_version = ">= 1.3.0"
+}
+
 resource "azurerm_resource_group" "this" {
   location = var.location
   name     = "${local.service_code_rsg}${var.region_code}${var.application_code}${var.environment}${var.correlative}"

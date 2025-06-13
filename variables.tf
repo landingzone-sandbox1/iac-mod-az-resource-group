@@ -6,13 +6,7 @@ variable "location" {
 
 variable "application_code" {
   type        = string
-  description = "Required. Application code or service code."
-  nullable    = false
-}
-
-variable "environment" {
-  type        = string
-  description = "Required. Application environment (P, C, D, F, E)."
+  description = "Application code or service code."
   nullable    = false
 }
 variable "region_code" {
@@ -20,16 +14,22 @@ variable "region_code" {
   description = "Region code (e.g., 'EU2'for EastUS2)."
   nullable    = false
 }
+variable "environment" {
+  type        = string
+  description = "Application environment (P, C, D, E)."
+  nullable    = false
+}
+variable "correlative" {
+  description = "Correlative or sequence identifier for the resource group."
+  type        = string
+}
 
 variable "lock" {
   type = object({
     kind = optional(string, "ReadOnly")
     name = optional(string, null)
   })
-  default = {
-    kind = "ReadOnly"
-    name = null
-  }
+  default     = null
   description = <<DESCRIPTION
   Controls the Resource Lock configuration for this resource. The following properties can be specified:
   
@@ -48,7 +48,3 @@ variable "tags" {
   description = "(Optional) Tags of the resource."
 }
 
-variable "correlative" {
-  description = "Correlative or sequence identifier for the resource group."
-  type        = string
-}
