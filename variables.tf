@@ -3,7 +3,7 @@ variable "location" {
   description = "Required. The Azure region for deployment of the this resource."
   nullable    = false
   validation {
-    condition     = length(trim(var.location)) > 0
+    condition     = length(trim(var.location, " ")) > 0
     error_message = "The location must not be empty."
   }
 }
@@ -42,7 +42,7 @@ variable "correlative" {
   description = "Correlative or sequence identifier for the resource group."
   type        = string
   validation {
-    condition     = length(trim(var.correlative)) > 0
+    condition     = length(trim(var.correlative, " ")) > 0
     error_message = "The correlative must not be empty."
   }
 }
