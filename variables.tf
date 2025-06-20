@@ -2,26 +2,49 @@ variable "location" {
   type        = string
   description = "Required. The Azure region for deployment of the this resource."
   nullable    = false
+  validation {
+    condition     = length(trim(var.location)) > 0
+    error_message = "The location must not be empty."
+  }
 }
 
 variable "application_code" {
   type        = string
   description = "Application code or service code."
   nullable    = false
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9]{4}$", var.application_code))
+    error_message = "The application_code must be exactly 4 alphanumeric characters."
+  }
 }
+
 variable "region_code" {
   type        = string
   description = "Region code (e.g., 'EU2'for EastUS2)."
   nullable    = false
+  validation {
+    condition     = can(regex("^[A-Z0-9]{2,}$", var.region_code))
+    error_message = "The region_code must be uppercase letters and/or numbers (e.g., 'EU2')."
+  }
 }
+
 variable "environment" {
   type        = string
-  description = "Application environment (P, C, D, E)."
+  description = "Application environment (P, C, D)."
   nullable    = false
+  validation {
+    condition     = contains(["P", "C", "D"], var.environment)
+    error_message = "The environment must be one of: P, C, D."
+  }
 }
+
 variable "correlative" {
   description = "Correlative or sequence identifier for the resource group."
   type        = string
+  validation {
+    condition     = length(trim(var.correlative)) > 0
+    error_message = "The correlative must not be empty."
+  }
 }
 
 variable "lock" {
