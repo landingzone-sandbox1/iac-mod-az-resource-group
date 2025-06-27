@@ -27,6 +27,7 @@ module "log_analytics" {
   objective_code   = var.objective_code
   environment      = var.environment
   correlative      = var.correlative
+  depends_on       = [azurerm_resource_group.this]
 
   # Optional: pass tags or other variables as needed
   tags = var.tags
@@ -52,4 +53,5 @@ module "storage_account" {
   access_tier                      = var.access_tier
   allow_nested_items_to_be_public  = var.allow_nested_items_to_be_public
   cross_tenant_replication_enabled = var.cross_tenant_replication_enabled
+  depends_on                       = [azurerm_resource_group.this]
 }

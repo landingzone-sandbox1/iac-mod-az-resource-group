@@ -14,7 +14,7 @@ variable "account_tier" {
 variable "allow_nested_items_to_be_public" {
   description = "(Optional) Allow or disallow nested items within this Account to opt into being public. Defaults to false."
   type        = bool
-  default     = null
+  default     = false
 }
 
 variable "cross_tenant_replication_enabled" {
