@@ -1,9 +1,8 @@
 variable "account_tier" {
   description = "(Optional) Defines the Tier to use for this storage account. Valid options are 'Standard' and 'Premium'."
   type        = string
-  default     = null
   validation {
-    condition     = var.account_tier == null || contains(["Standard", "Premium"], var.account_tier)
+    condition     = contains(["Standard", "Premium"], var.account_tier)
     error_message = "account_tier must be either 'Standard' or 'Premium' if set."
   }
 }
@@ -52,11 +51,11 @@ variable "region_code" {
 
 variable "environment" {
   type        = string
-  description = "Application environment (P, C, D)."
+  description = "Application environment (P, C, D, F)."
   nullable    = false
   validation {
-    condition     = contains(["P", "C", "D"], var.environment)
-    error_message = "The environment must be one of: P, C, D."
+    condition     = contains(["P", "C", "D", "F"], var.environment)
+    error_message = "The environment must be one of: P, C, D, F."
   }
 }
 

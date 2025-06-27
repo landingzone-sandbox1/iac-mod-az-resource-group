@@ -33,12 +33,12 @@
 | <a name="input_access_tier"></a> [access\_tier](#input\_access\_tier) | Storage account access tier. | `string` | `"Hot"` | no |
 | <a name="input_account_kind"></a> [account\_kind](#input\_account\_kind) | Storage account kind. | `string` | `"StorageV2"` | no |
 | <a name="input_account_replication_type"></a> [account\_replication\_type](#input\_account\_replication\_type) | Storage account replication type. | `string` | `"ZRS"` | no |
-| <a name="input_account_tier"></a> [account\_tier](#input\_account\_tier) | (Optional) Defines the Tier to use for this storage account. Valid options are 'Standard' and 'Premium'. | `string` | `null` | no |
+| <a name="input_account_tier"></a> [account\_tier](#input\_account\_tier) | (Optional) Defines the Tier to use for this storage account. Valid options are 'Standard' and 'Premium'. | `string` | n/a | yes |
 | <a name="input_allow_nested_items_to_be_public"></a> [allow\_nested\_items\_to\_be\_public](#input\_allow\_nested\_items\_to\_be\_public) | (Optional) Allow or disallow nested items within this Account to opt into being public. Defaults to false. | `bool` | `null` | no |
 | <a name="input_application_code"></a> [application\_code](#input\_application\_code) | Application code or service code. | `string` | n/a | yes |
 | <a name="input_correlative"></a> [correlative](#input\_correlative) | Correlative or sequence identifier for the resource group. | `string` | n/a | yes |
 | <a name="input_cross_tenant_replication_enabled"></a> [cross\_tenant\_replication\_enabled](#input\_cross\_tenant\_replication\_enabled) | (Optional) Should cross Tenant replication be enabled? Defaults to false. | `bool` | `null` | no |
-| <a name="input_environment"></a> [environment](#input\_environment) | Application environment (P, C, D). | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Application environment (P, C, D, F). | `string` | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | Required. The Azure region for deployment of the this resource. | `string` | n/a | yes |
 | <a name="input_lock"></a> [lock](#input\_lock) | Controls the Resource Lock configuration for this resource. The following properties can be specified:<br/><br/>  - `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.<br/>  - `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource. | <pre>object({<br/>    kind = optional(string, "ReadOnly")<br/>    name = optional(string, null)<br/>  })</pre> | `null` | no |
 | <a name="input_objective_code"></a> [objective\_code](#input\_objective\_code) | 3-4 character code for resource purpose (e.g., STOR, CORE). | `string` | n/a | yes |
