@@ -20,7 +20,7 @@ resource "azurerm_management_lock" "this" {
 # add log analytics module
 module "log_analytics" {
   # tflint-ignore: terraform_module_pinned_source
-  source           = "git@github.com:creditcorp/iac-mod-az-log-analytics.git//modules/iac-mod-az-log-analytics"
+  source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
   location         = var.location
   region_code      = var.region_code
   application_code = var.application_code
@@ -36,7 +36,7 @@ module "log_analytics" {
 
 module "storage_account" {
   # tflint-ignore: terraform_module_pinned_source
-  source           = "git@github.com:creditcorp/iac-mod-az-storage-account.git//modules/iac-mod-az-storage-account"
+  source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
   location         = var.location
   region_code      = var.region_code
   application_code = var.application_code

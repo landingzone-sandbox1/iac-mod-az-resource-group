@@ -8,35 +8,6 @@ variable "account_tier" {
   }
 }
 
-variable "account_replication_type" {
-  description = "(Optional) Defines the type of replication to use for this storage account. Valid options are 'LRS', 'GRS', 'RAGRS', 'ZRS', 'GZRS', 'RAGZRS'."
-  type        = string
-  default     = null
-  validation {
-    condition     = var.account_replication_type == null || contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.account_replication_type)
-    error_message = "account_replication_type must be one of 'LRS', 'GRS', 'RAGRS', 'ZRS', 'GZRS', 'RAGZRS' if set."
-  }
-}
-
-variable "account_kind" {
-  description = "(Optional) Defines the Kind of account. Valid options are 'BlobStorage', 'BlockBlobStorage', 'FileStorage', 'Storage', 'StorageV2'."
-  type        = string
-  default     = null
-  validation {
-    condition     = var.account_kind == null || contains(["BlobStorage", "BlockBlobStorage", "FileStorage", "Storage", "StorageV2"], var.account_kind)
-    error_message = "account_kind must be one of 'BlobStorage', 'BlockBlobStorage', 'FileStorage', 'Storage', 'StorageV2' if set."
-  }
-}
-
-variable "access_tier" {
-  description = "(Optional) Defines the access tier for 'BlobStorage', 'FileStorage' and 'StorageV2' accounts. Valid options are 'Hot' and 'Cool'."
-  type        = string
-  default     = null
-  validation {
-    condition     = var.access_tier == null || contains(["Hot", "Cool"], var.access_tier)
-    error_message = "access_tier must be either 'Hot' or 'Cool' if set."
-  }
-}
 
 variable "allow_nested_items_to_be_public" {
   description = "(Optional) Allow or disallow nested items within this Account to opt into being public. Defaults to false."

@@ -16,8 +16,8 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_log_analytics"></a> [log\_analytics](#module\_log\_analytics) | git@github.com:creditcorp/iac-mod-az-log-analytics.git//modules/iac-mod-az-log-analytics | n/a |
-| <a name="module_storage_account"></a> [storage\_account](#module\_storage\_account) | git@github.com:creditcorp/iac-mod-az-storage-account.git//modules/iac-mod-az-storage-account | n/a |
+| <a name="module_log_analytics"></a> [log\_analytics](#module\_log\_analytics) | git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics | n/a |
+| <a name="module_storage_account"></a> [storage\_account](#module\_storage\_account) | git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account | n/a |
 
 ## Resources
 
