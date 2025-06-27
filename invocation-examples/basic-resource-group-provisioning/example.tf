@@ -1,23 +1,23 @@
 # Repository: https://github.com/creditcorp/iac-mod-az-resource-group
 #
-# Use case name: Basic Azure Resource Group Provisioning
-# Description: Example of how to provision a Resource Group using the module with validated configuration.
-# When to use: Use when you need to create a resource group with standardized naming, tagging, and optional resource lock.
+# Use case name: Basic Azure Resource Group with Storage and Analytics Provisioning
+# Description: Example of how to provision a Resource Group with Storage Account and Log Analytics using the module.
+# When to use: Use when you need to create a complete environment with storage, logging, and standardized naming.
 # Considerations:
-#   - The resource group name is auto-generated using standard naming logic within the module.
-#   - Only user-settable variables are exposed below; internal values are handled via locals.
-#   - Optional resource lock and tags can be set as needed.
+#   - The resource names are auto-generated using ALZ naming conventions within the module.
+#   - Security defaults are applied (TLS 1.2, OAuth authentication, disabled shared keys).
+#   - Optional storage container and resource lock can be configured as needed.
 # Variables sent (user-settable):
 #   - location: Azure region for the resource group (non-empty string).
 #   - region_code: Short code for the Azure region (uppercase alphanumeric, e.g., "EU2").
-#   - application_code: Application identifier for naming and tagging (exactly 4 alphanumeric characters, e.g., "AP01").
+#   - application_code: Application identifier (exactly 4 alphanumeric characters, e.g., "AP01").
 #   - environment: Environment code (one of: P, C, D).
 #   - correlative: Unique identifier or numeric suffix (non-empty string, e.g., "01").
-#   - lock: (Optional) Object to configure a resource lock (kind: "CanNotDelete" or "ReadOnly", name: optional).
-#   - tags: (Optional) Map of tags to assign to the resource group.
-# Variables not sent (non-user-settable):
-#   - service_code: Internal constant for naming, set to "RSG" in the module.
-#   - resource_group_name: Auto-generated in the module using locals.
+#   - objective_code: Purpose code for storage naming (3-4 chars, e.g., "STOR").
+#   - account_replication_type: Storage replication strategy.
+#   - storage_container: (Optional) Container configuration.
+#   - lock: (Optional) Object to configure a resource lock.
+#   - tags: (Optional) Map of tags to assign to resources.
 
 terraform {
   required_providers {
@@ -39,12 +39,45 @@ module "resource_group" {
   application_code = "AP01"
   environment      = "D"
   correlative      = "01"
+  objective_code   = "STOR"
+
+  # Log Analytics specific objective code (per usage guide)
+  log_analytics_objective_code = "MON"
+
+  # Storage Account configuration
+  account_replication_type = "ZRS"
+  storage_account_tier     = "Standard"
+  account_kind             = "StorageV2"
+  access_tier              = "Hot"
+
+  # Security settings (recommended for dev)
+  shared_access_key_enabled     = true # Set to false for production
+  public_network_access_enabled = false
+
+  # Optional storage container
+  storage_container = {
+    name                  = "data"
+    container_access_type = "private"
+  }
+
+  # Log Analytics configuration (per usage guide)
+  log_analytics_sku                                       = "PerGB2018"
+  log_analytics_retention_days                            = 30
+  log_analytics_workspace_allow_resource_only_permissions = true
+  log_analytics_workspace_internet_ingestion_enabled      = true
+  log_analytics_workspace_internet_query_enabled          = true
+
+  # Resource protection
   lock = {
     kind = "ReadOnly"
     name = null
   }
+
+  # Tags for governance (per usage guide)
   tags = {
-    owner = "devops"
-    env   = "dev"
+    owner       = "devops"
+    environment = "dev"
+    project     = "analytics"
+    cost_center = "IT"
   }
 }
