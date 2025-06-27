@@ -3,7 +3,7 @@ variable "account_tier" {
   type        = string
   default     = null
   validation {
-    condition     = contains(["Standard", "Premium"], var.account_tier)
+    condition     = var.account_tier == null || contains(["Standard", "Premium"], var.account_tier)
     error_message = "account_tier must be either 'Standard' or 'Premium' if set."
   }
 }
