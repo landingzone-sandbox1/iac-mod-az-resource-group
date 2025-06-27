@@ -37,47 +37,11 @@ module "resource_group" {
   location         = "eastus2"
   region_code      = "EU2"
   application_code = "AP01"
+  objective_code   = "CORE"
   environment      = "D"
   correlative      = "01"
-  objective_code   = "STOR"
-
-  # Log Analytics specific objective code (per usage guide)
-  log_analytics_objective_code = "MON"
-
-  # Storage Account configuration
-  account_replication_type = "ZRS"
-  storage_account_tier     = "Standard"
-  account_kind             = "StorageV2"
-  access_tier              = "Hot"
-
-  # Security settings (recommended for dev)
-  shared_access_key_enabled     = true # Set to false for production
-  public_network_access_enabled = false
-
-  # Optional storage container
-  storage_container = {
-    name                  = "data"
-    container_access_type = "private"
-  }
-
-  # Log Analytics configuration (per usage guide)
-  log_analytics_sku                                       = "PerGB2018"
-  log_analytics_retention_days                            = 30
-  log_analytics_workspace_allow_resource_only_permissions = true
-  log_analytics_workspace_internet_ingestion_enabled      = true
-  log_analytics_workspace_internet_query_enabled          = true
-
-  # Resource protection
-  lock = {
-    kind = "ReadOnly"
-    name = null
-  }
-
-  # Tags for governance (per usage guide)
   tags = {
-    owner       = "devops"
     environment = "dev"
-    project     = "analytics"
-    cost_center = "IT"
+    owner       = "app-team"
   }
 }

@@ -69,3 +69,8 @@ test/go.sum
 TestRecord/
 **/TestRecord.md.tmp
 .azure/
+
+**/usage-markdown/
+usage.md
+
+**/modules/

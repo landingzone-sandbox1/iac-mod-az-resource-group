@@ -7,9 +7,9 @@ locals {
   correlative      = var.correlative
   name             = "${local.service_code_rsg}${local.region_code}${local.application_code}${local.environment}${local.correlative}"
 
-  # Storage Account naming (must be lowercase and unique)
-  storage_account_name = lower("st${var.objective_code}${local.region_code}${local.application_code}${local.environment}${local.correlative}")
+  # # Storage Account naming (must be lowercase and unique)
+  # storage_account_name = lower("st${var.objective_code}${local.region_code}${local.application_code}${local.environment}${local.correlative}")
 
-  # Log Analytics Workspace naming (using dedicated objective code)
-  log_analytics_name = "log-${lower(var.log_analytics_objective_code)}-${lower(local.region_code)}-${lower(local.application_code)}-${lower(local.environment)}-${local.correlative}"
+  # # Log Analytics Workspace naming (using dedicated objective code)
+  # log_analytics_name = "log-${lower(var.log_analytics_objective_code)}-${lower(local.region_code)}-${lower(local.application_code)}-${lower(local.environment)}-${local.correlative}"
 }

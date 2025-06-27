@@ -1,3 +1,54 @@
+variable "account_tier" {
+  description = "(Optional) Defines the Tier to use for this storage account. Valid options are 'Standard' and 'Premium'."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.account_tier == null || contains(["Standard", "Premium"], var.account_tier)
+    error_message = "account_tier must be either 'Standard' or 'Premium' if set."
+  }
+}
+
+variable "account_replication_type" {
+  description = "(Optional) Defines the type of replication to use for this storage account. Valid options are 'LRS', 'GRS', 'RAGRS', 'ZRS', 'GZRS', 'RAGZRS'."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.account_replication_type == null || contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.account_replication_type)
+    error_message = "account_replication_type must be one of 'LRS', 'GRS', 'RAGRS', 'ZRS', 'GZRS', 'RAGZRS' if set."
+  }
+}
+
+variable "account_kind" {
+  description = "(Optional) Defines the Kind of account. Valid options are 'BlobStorage', 'BlockBlobStorage', 'FileStorage', 'Storage', 'StorageV2'."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.account_kind == null || contains(["BlobStorage", "BlockBlobStorage", "FileStorage", "Storage", "StorageV2"], var.account_kind)
+    error_message = "account_kind must be one of 'BlobStorage', 'BlockBlobStorage', 'FileStorage', 'Storage', 'StorageV2' if set."
+  }
+}
+
+variable "access_tier" {
+  description = "(Optional) Defines the access tier for 'BlobStorage', 'FileStorage' and 'StorageV2' accounts. Valid options are 'Hot' and 'Cool'."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.access_tier == null || contains(["Hot", "Cool"], var.access_tier)
+    error_message = "access_tier must be either 'Hot' or 'Cool' if set."
+  }
+}
+
+variable "allow_nested_items_to_be_public" {
+  description = "(Optional) Allow or disallow nested items within this Account to opt into being public. Defaults to false."
+  type        = bool
+  default     = null
+}
+
+variable "cross_tenant_replication_enabled" {
+  description = "(Optional) Should cross Tenant replication be enabled? Defaults to false."
+  type        = bool
+  default     = null
+}
 variable "location" {
   type        = string
   description = "Required. The Azure region for deployment of the this resource."
@@ -82,16 +133,6 @@ variable "objective_code" {
   }
 }
 
-variable "log_analytics_objective_code" {
-  type        = string
-  description = "3-4 character purpose code for Log Analytics workspace (e.g., MON, LOG)."
-  default     = "MON"
-  validation {
-    condition     = can(regex("^[A-Z0-9]{3,4}$", var.log_analytics_objective_code))
-    error_message = "The log_analytics_objective_code must be 3-4 uppercase alphanumeric characters."
-  }
-}
-
 variable "account_replication_type" {
   type        = string
   description = "Storage account replication type."
@@ -99,16 +140,6 @@ variable "account_replication_type" {
   validation {
     condition     = contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.account_replication_type)
     error_message = "The account_replication_type must be one of: LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS."
-  }
-}
-
-variable "storage_account_tier" {
-  type        = string
-  description = "Storage account tier."
-  default     = "Standard"
-  validation {
-    condition     = contains(["Standard", "Premium"], var.storage_account_tier)
-    error_message = "The storage_account_tier must be either Standard or Premium."
   }
 }
 
@@ -131,124 +162,3 @@ variable "access_tier" {
     error_message = "The access_tier must be either Hot or Cool."
   }
 }
-
-variable "shared_access_key_enabled" {
-  type        = bool
-  description = "Enable shared access key for storage account."
-  default     = false
-}
-
-variable "public_network_access_enabled" {
-  type        = bool
-  description = "Enable public network access for storage account."
-  default     = false
-}
-
-variable "firewall_ips" {
-  type        = list(string)
-  description = "List of IP addresses or CIDR blocks to allow access to storage account."
-  default     = null
-}
-
-variable "vnet_subnet_ids" {
-  type        = list(string)
-  description = "List of virtual network subnet IDs to allow access to storage account."
-  default     = null
-}
-
-variable "blob_delete_retention_days" {
-  type        = number
-  description = "Number of days to retain deleted blobs."
-  default     = 7
-  validation {
-    condition     = var.blob_delete_retention_days >= 1 && var.blob_delete_retention_days <= 365
-    error_message = "The blob_delete_retention_days must be between 1 and 365."
-  }
-}
-
-variable "container_delete_retention_days" {
-  type        = number
-  description = "Number of days to retain deleted containers."
-  default     = 7
-  validation {
-    condition     = var.container_delete_retention_days >= 1 && var.container_delete_retention_days <= 365
-    error_message = "The container_delete_retention_days must be between 1 and 365."
-  }
-}
-
-variable "blob_versioning_enabled" {
-  type        = bool
-  description = "Enable blob versioning."
-  default     = true
-}
-
-variable "storage_container" {
-  type = object({
-    name                  = string
-    container_access_type = optional(string, "private")
-  })
-  description = "Storage container configuration."
-  default     = null
-  validation {
-    condition     = var.storage_container != null ? contains(["blob", "container", "private"], var.storage_container.container_access_type) : true
-    error_message = "The container_access_type must be one of: blob, container, private."
-  }
-}
-
-# Log Analytics Workspace Variables
-variable "log_analytics_sku" {
-  type        = string
-  description = "Log Analytics workspace SKU."
-  default     = "PerGB2018"
-  validation {
-    condition     = contains(["Free", "Standalone", "PerNode", "PerGB2018"], var.log_analytics_sku)
-    error_message = "The log_analytics_sku must be one of: Free, Standalone, PerNode, PerGB2018."
-  }
-}
-
-variable "log_analytics_retention_days" {
-  type        = number
-  description = "Log Analytics workspace retention in days."
-  default     = 30
-  validation {
-    condition     = var.log_analytics_retention_days >= 30 && var.log_analytics_retention_days <= 730
-    error_message = "The log_analytics_retention_days must be between 30 and 730."
-  }
-}
-
-variable "log_analytics_daily_quota_gb" {
-  type        = number
-  description = "Log Analytics workspace daily quota in GB."
-  default     = -1
-}
-
-variable "log_analytics_workspace_allow_resource_only_permissions" {
-  type        = bool
-  description = "Allow resource-only permissions for the Log Analytics workspace."
-  default     = true
-}
-
-variable "log_analytics_workspace_cmk_for_query_forced" {
-  type        = bool
-  description = "Require customer-managed key for query operations."
-  default     = false
-}
-
-variable "log_analytics_workspace_internet_ingestion_enabled" {
-  type        = bool
-  description = "Enable ingestion over public internet for the Log Analytics workspace."
-  default     = true
-}
-
-variable "log_analytics_workspace_internet_query_enabled" {
-  type        = bool
-  description = "Enable query over public internet for the Log Analytics workspace."
-  default     = true
-}
-
-variable "log_analytics_workspace_local_authentication_disabled" {
-  type        = bool
-  description = "Disable local authentication (use Azure AD only)."
-  default     = false
-}
-
