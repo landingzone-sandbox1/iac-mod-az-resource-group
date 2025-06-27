@@ -1,6 +1,7 @@
 variable "account_tier" {
   description = "(Optional) Defines the Tier to use for this storage account. Valid options are 'Standard' and 'Premium'."
   type        = string
+  default     = null
   validation {
     condition     = contains(["Standard", "Premium"], var.account_tier)
     error_message = "account_tier must be either 'Standard' or 'Premium' if set."
