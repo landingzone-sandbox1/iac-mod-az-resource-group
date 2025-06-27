@@ -1,10 +1,12 @@
 variable "account_tier" {
-  description = "(Optional) Defines the Tier to use for this storage account. Valid options are 'Standard' and 'Premium'."
   type        = string
-  default     = null
+  description = "(Required) Defines the Tier to use for this storage account. Valid options are `Standard` and `Premium`. For `BlockBlobStorage` and `FileStorage` accounts only `Premium` is valid. Changing this forces a new resource to be created."
+  default     = "Standard"
+  nullable    = false
+
   validation {
-    condition     = var.account_tier == null || contains(["Standard", "Premium"], var.account_tier)
-    error_message = "account_tier must be either 'Standard' or 'Premium' if set."
+    condition     = contains(["Standard", "Premium"], var.account_tier)
+    error_message = "Invalid value for account tier. Valid options are `Standard` and `Premium`. For `BlockBlobStorage` and `FileStorage` accounts only `Premium` is valid. Changing this forces a new resource to be created."
   }
 }
 
