@@ -19,39 +19,36 @@ resource "azurerm_management_lock" "this" {
 
 # add log analytics module
 module "log_analytics" {
+  # source = "./child-module-source/iac-mod-az-log-analytics"
   # tflint-ignore: terraform_module_pinned_source
   source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
   location         = var.location
   region_code      = var.region_code
-  application_code = var.application_code
   objective_code   = var.objective_code
+  application_code = var.application_code
   environment      = var.environment
   correlative      = var.correlative
   depends_on       = [azurerm_resource_group.this]
-
-  # Optional: pass tags or other variables as needed
-  tags = var.tags
+  tags             = var.tags
 }
 
 # add storage account
 
 module "storage_account" {
+  # source = "./child-module-source/iac-mod-az-storage-account"
   # tflint-ignore: terraform_module_pinned_source
-  source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
-  location         = var.location
-  region_code      = var.region_code
-  application_code = var.application_code
-  objective_code   = var.objective_code
-  environment      = var.environment
-  correlative      = var.correlative
+  source   = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
+  location = var.location
 
-  # Optional: pass tags or other variables as needed
-  tags                             = var.tags
-  account_tier                     = var.account_tier
-  account_replication_type         = var.account_replication_type
-  account_kind                     = var.account_kind
-  access_tier                      = var.access_tier
-  allow_nested_items_to_be_public  = var.allow_nested_items_to_be_public
-  cross_tenant_replication_enabled = var.cross_tenant_replication_enabled
-  depends_on                       = [azurerm_resource_group.this]
+
+  # Pass object variables
+  naming                    = var.naming
+  network_and_rbac_settings = var.network_and_rbac_settings
+  storage_container         = var.storage_container
+  diagnostic_categories     = var.diagnostic_categories
+  diagnostic_settings       = var.diagnostic_settings
+  storage_settings          = var.storage_settings
+  cost_management           = var.cost_management
+
+  depends_on = [azurerm_resource_group.this]
 }

@@ -73,4 +73,6 @@ TestRecord/
 **/usage-markdown/
 usage.md
 
-**/modules/
+**/module-source/
+child-module-source/iac-mod-az-log-analytics/
+child-module-source/iac-mod-az-storage-account/

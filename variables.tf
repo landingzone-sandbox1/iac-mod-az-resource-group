@@ -1,27 +1,102 @@
-variable "account_tier" {
-  type        = string
-  description = "(Required) Defines the Tier to use for this storage account. Valid options are `Standard` and `Premium`. For `BlockBlobStorage` and `FileStorage` accounts only `Premium` is valid. Changing this forces a new resource to be created."
-  default     = "Standard"
-  nullable    = false
+variable "network_and_rbac_settings" {
+  description = "Network and RBAC configuration for the storage account."
+  type = object({
+    firewall_ips    = optional(list(string), [])
+    vnet_subnet_ids = optional(list(string), [])
+    role_assignments = optional(map(object({
+      role_definition_id_or_name             = string
+      principal_id                           = string
+      principal_type                         = string
+      description                            = optional(string, null)
+      skip_service_principal_aad_check       = optional(bool, false)
+      condition                              = optional(string, null)
+      condition_version                      = optional(string, null)
+      delegated_managed_identity_resource_id = optional(string, null)
+    })), {})
+  })
+  default = {}
+}
 
-  validation {
-    condition     = contains(["Standard", "Premium"], var.account_tier)
-    error_message = "Invalid value for account tier. Valid options are `Standard` and `Premium`. For `BlockBlobStorage` and `FileStorage` accounts only `Premium` is valid. Changing this forces a new resource to be created."
+
+
+variable "storage_container" {
+  description = "Configuration for the storage container. Set to null to skip container creation."
+  type = object({
+    name                  = string
+    container_access_type = optional(string, "private")
+  })
+  default = null
+}
+
+variable "diagnostic_settings" {
+  description = "Diagnostic settings for the storage account."
+  type = object({
+    enable_blob                = bool
+    enable_queue               = bool
+    enable_table               = bool
+    enable_file                = bool
+    enable_account             = bool
+    log_analytics_workspace_id = string
+  })
+  default = {
+    enable_blob                = true
+    enable_queue               = false
+    enable_table               = false
+    enable_file                = false
+    enable_account             = true
+    log_analytics_workspace_id = ""
+  }
+}
+
+variable "storage_settings" {
+  description = "General storage account settings."
+  type = object({
+    account_replication_type          = string
+    account_tier                      = string
+    account_kind                      = string
+    access_tier                       = string
+    large_file_share_enabled          = bool
+    is_hns_enabled                    = bool
+    nfsv3_enabled                     = bool
+    sftp_enabled                      = bool
+    queue_encryption_key_type         = string
+    table_encryption_key_type         = string
+    infrastructure_encryption_enabled = bool
+    blob_versioning_enabled           = optional(bool, false)
+    blob_change_feed_enabled          = optional(bool, false)
+  })
+  default = {
+    account_replication_type          = "LRS"
+    account_tier                      = "Standard"
+    account_kind                      = "StorageV2"
+    access_tier                       = "Hot"
+    large_file_share_enabled          = false
+    is_hns_enabled                    = false
+    nfsv3_enabled                     = false
+    sftp_enabled                      = false
+    queue_encryption_key_type         = "Service"
+    table_encryption_key_type         = "Service"
+    infrastructure_encryption_enabled = false
+    blob_versioning_enabled           = false
+    blob_change_feed_enabled          = false
+  }
+}
+
+variable "cost_management" {
+  description = "Cost management and tagging settings."
+  type = object({
+    tags           = map(string)
+    retention_days = number
+  })
+  default = {
+    tags           = {}
+    retention_days = 14
   }
 }
 
 
-variable "allow_nested_items_to_be_public" {
-  description = "(Optional) Allow or disallow nested items within this Account to opt into being public. Defaults to false."
-  type        = bool
-  default     = false
-}
 
-variable "cross_tenant_replication_enabled" {
-  description = "(Optional) Should cross Tenant replication be enabled? Defaults to false."
-  type        = bool
-  default     = null
-}
+
 variable "location" {
   type        = string
   description = "Required. The Azure region for deployment of the this resource."
@@ -71,6 +146,22 @@ variable "correlative" {
   }
 }
 
+variable "objective_code" {
+  description = "A 3 to 4 character code conveying a meaningful purpose for the resource (e.g., core, mgmt)."
+  type        = string
+  validation {
+    condition     = var.objective_code == "" || can(regex("^[A-Za-z0-9]{3,4}$", var.objective_code))
+    error_message = "When provided, objective code must be 3 or 4 alphanumeric characters (letters or numbers). See: https://github.com/landingzone-sandbox/wiki-landing-zone/wiki/ALZ-+-GEN-IA-Landing-Zone-(MS-English)-(M1)---Resource-Organization-Naming-Convention-Standards"
+  }
+
+}
+
+variable "diagnostic_categories" {
+  description = "List of diagnostic log categories to enable for the storage account."
+  type        = list(string)
+  default     = ["StorageRead", "StorageWrite", "StorageDelete"]
+}
+
 variable "lock" {
   type = object({
     kind = optional(string, "ReadOnly")
@@ -95,43 +186,36 @@ variable "tags" {
   description = "(Optional) Tags of the resource."
 }
 
-# Storage Account Variables
-variable "objective_code" {
-  type        = string
-  description = "3-4 character code for resource purpose (e.g., STOR, CORE)."
-  nullable    = false
+
+# Consolidated naming object for all naming-related properties
+variable "naming" {
+  description = "Naming convention object for resource naming."
+  type = object({
+    application_code = string # 4 alphanumeric characters
+    region_code      = string # e.g., 'EU2'
+    environment      = string # P, C, D, F
+    correlative      = string # sequence identifier
+    objective_code   = string # 3-4 uppercase alphanumeric characters
+  })
   validation {
-    condition     = can(regex("^[A-Z0-9]{3,4}$", var.objective_code))
+    condition     = can(regex("^[a-zA-Z0-9]{4}$", var.naming.application_code))
+    error_message = "The application_code must be exactly 4 alphanumeric characters."
+  }
+  validation {
+    condition     = can(regex("^[A-Z0-9]{2,}$", var.naming.region_code))
+    error_message = "The region_code must be uppercase letters and/or numbers (e.g., 'EU2')."
+  }
+  validation {
+    condition     = contains(["P", "C", "D", "F"], var.naming.environment)
+    error_message = "The environment must be one of: P, C, D, F."
+  }
+  validation {
+    condition     = length(trim(var.naming.correlative, " ")) > 0
+    error_message = "The correlative must not be empty."
+  }
+  validation {
+    condition     = can(regex("^[A-Z0-9]{3,4}$", var.naming.objective_code))
     error_message = "The objective_code must be 3-4 uppercase alphanumeric characters."
   }
 }
 
-variable "account_replication_type" {
-  type        = string
-  description = "Storage account replication type."
-  default     = "ZRS"
-  validation {
-    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.account_replication_type)
-    error_message = "The account_replication_type must be one of: LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS."
-  }
-}
-
-variable "account_kind" {
-  type        = string
-  description = "Storage account kind."
-  default     = "StorageV2"
-  validation {
-    condition     = contains(["BlobStorage", "BlockBlobStorage", "FileStorage", "Storage", "StorageV2"], var.account_kind)
-    error_message = "The account_kind must be one of: BlobStorage, BlockBlobStorage, FileStorage, Storage, StorageV2."
-  }
-}
-
-variable "access_tier" {
-  type        = string
-  description = "Storage account access tier."
-  default     = "Hot"
-  validation {
-    condition     = contains(["Hot", "Cool"], var.access_tier)
-    error_message = "The access_tier must be either Hot or Cool."
-  }
-}
