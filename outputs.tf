@@ -32,3 +32,9 @@ output "storage_container_name" {
   description = "The name of the storage container from the module, if created."
   value       = module.storage_account.storage_container_name
 }
+
+output "storage_account" {
+  description = "Object containing key storage account outputs."
+  value       = module.storage_account.storage_account
+}
+
