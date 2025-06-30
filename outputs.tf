@@ -18,21 +18,6 @@ output "log_analytics_workspace_id" {
   value       = module.log_analytics.resource_id
 }
 
-output "storage_account_name" {
-  description = "The name of the storage account from the module."
-  value       = module.storage_account.storage_account_name
-}
-
-output "storage_account_id" {
-  description = "The ID of the storage account from the module."
-  value       = module.storage_account.storage_account_id
-}
-
-output "storage_container_name" {
-  description = "The name of the storage container from the module, if created."
-  value       = module.storage_account.storage_container_name
-}
-
 output "storage_account" {
   description = "Object containing key storage account outputs."
   value       = module.storage_account.storage_account
