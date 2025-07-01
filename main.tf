@@ -22,10 +22,12 @@ resource "azurerm_management_lock" "this" {
 
 # add log analytics module
 module "log_analytics" {
-  # source = "./child-module-source/iac-mod-az-log-analytics"
+  #  source = "./child-module-source/iac-mod-az-log-analytics"
   # tflint-ignore: terraform_module_pinned_source
-  source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
-  location         = var.location
+  source              = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
+  location            = var.location
+  resource_group_name = local.name
+
   region_code      = var.region_code
   objective_code   = var.objective_code
   application_code = var.application_code
@@ -38,11 +40,11 @@ module "log_analytics" {
 # add storage account
 
 module "storage_account" {
-  # source = "./child-module-source/iac-mod-az-storage-account"
+  #  source = "./child-module-source/iac-mod-az-storage-account"
   # tflint-ignore: terraform_module_pinned_source
-  source   = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
-  location = var.location
-
+  source              = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
+  location            = var.location
+  resource_group_name = local.name
 
   # Pass object variables
   naming                    = var.naming
@@ -57,6 +59,7 @@ module "storage_account" {
 }
 
 module "key_vault" {
+  #  source = "./child-module-source/iac-mod-az-key-vault"
   # tflint-ignore: terraform_module_pinned_source
   source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-key-vault.git"
   location         = var.location
