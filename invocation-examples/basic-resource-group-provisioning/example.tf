@@ -21,6 +21,7 @@
 
 
 terraform {
+  required_version = ">= 1.9"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -80,16 +81,17 @@ variable "tags" {
 }
 
 module "resource_group" {
-  source                   = "../.." # Adjust path as needed
-  location                 = local.location
-  naming                   = local.naming
-  tags                     = local.tags
+  source                    = "../.." # Adjust path as needed
+  location                  = local.location
+  naming                    = local.naming
+  tags                      = local.tags
   network_and_rbac_settings = local.network_and_rbac_settings
   storage_container         = local.storage_container
   diagnostic_categories     = local.diagnostic_categories
   diagnostic_settings       = local.diagnostic_settings
   storage_settings          = local.storage_settings
   cost_management           = local.cost_management
+  key_vault_settings        = local.key_vault_settings
   # Pass naming components individually for modules that require them
   application_code = var.application_code
   region_code      = var.region_code
@@ -107,7 +109,7 @@ locals {
     correlative      = var.correlative
     objective_code   = var.objective_code
   }
-  tags = var.tags
+  tags                      = var.tags
   network_and_rbac_settings = {} # Fill as needed
   storage_container = {
     name = "default"
@@ -137,7 +139,22 @@ locals {
     blob_change_feed_enabled          = false
   }
   cost_management = {
-    tags = {}
+    tags           = {}
     retention_days = 14
+  }
+  key_vault_settings = {
+    sku_name                        = "standard"
+    enabled_for_disk_encryption     = true
+    enabled_for_deployment          = false
+    enabled_for_template_deployment = false
+    purge_protection_enabled        = false
+    soft_delete_retention_days      = 90
+    public_network_access_enabled   = true
+    network_acls = {
+      bypass                     = "AzureServices"
+      default_action             = "Deny"
+      ip_rules                   = []
+      virtual_network_subnet_ids = []
+    }
   }
 }

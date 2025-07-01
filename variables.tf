@@ -82,6 +82,40 @@ variable "storage_settings" {
   }
 }
 
+variable "key_vault_settings" {
+  description = "Configuration settings for the Key Vault."
+  type = object({
+    sku_name                        = string
+    enabled_for_disk_encryption     = bool
+    enabled_for_deployment          = bool
+    enabled_for_template_deployment = bool
+    purge_protection_enabled        = bool
+    soft_delete_retention_days      = number
+    public_network_access_enabled   = bool
+    network_acls = object({
+      bypass                     = string
+      default_action             = string
+      ip_rules                   = list(string)
+      virtual_network_subnet_ids = list(string)
+    })
+  })
+  default = {
+    sku_name                        = "premium"
+    enabled_for_disk_encryption     = true
+    enabled_for_deployment          = false
+    enabled_for_template_deployment = false
+    purge_protection_enabled        = true
+    soft_delete_retention_days      = 90
+    public_network_access_enabled   = false
+    network_acls = {
+      bypass                     = "AzureServices"
+      default_action             = "Deny"
+      ip_rules                   = []
+      virtual_network_subnet_ids = []
+    }
+  }
+}
+
 variable "cost_management" {
   description = "Cost management and tagging settings."
   type = object({
@@ -93,9 +127,6 @@ variable "cost_management" {
     retention_days = 14
   }
 }
-
-
-
 
 variable "location" {
   type        = string
@@ -218,4 +249,3 @@ variable "naming" {
     error_message = "The objective_code must be 3-4 uppercase alphanumeric characters."
   }
 }
-

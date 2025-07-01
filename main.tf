@@ -1,3 +1,5 @@
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "this" {
   location = var.location
   name     = local.name
@@ -13,7 +15,8 @@ resource "azurerm_management_lock" "this" {
 
   depends_on = [
     module.storage_account,
-    module.log_analytics
+    module.log_analytics,
+    module.key_vault
   ]
 }
 
@@ -49,6 +52,31 @@ module "storage_account" {
   diagnostic_settings       = var.diagnostic_settings
   storage_settings          = var.storage_settings
   cost_management           = var.cost_management
+
+  depends_on = [azurerm_resource_group.this]
+}
+
+module "key_vault" {
+  # tflint-ignore: terraform_module_pinned_source
+  source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-key-vault.git"
+  location         = var.location
+  tenant_id        = data.azurerm_client_config.current.tenant_id
+  region_code      = var.region_code
+  application_code = var.application_code
+  objective_code   = var.objective_code
+  environment      = var.environment
+  correlative      = var.correlative
+  tags             = var.tags
+
+  # Key Vault specific settings
+  sku_name                        = var.key_vault_settings.sku_name
+  enabled_for_disk_encryption     = var.key_vault_settings.enabled_for_disk_encryption
+  enabled_for_deployment          = var.key_vault_settings.enabled_for_deployment
+  enabled_for_template_deployment = var.key_vault_settings.enabled_for_template_deployment
+  purge_protection_enabled        = var.key_vault_settings.purge_protection_enabled
+  soft_delete_retention_days      = var.key_vault_settings.soft_delete_retention_days
+  public_network_access_enabled   = var.key_vault_settings.public_network_access_enabled
+  network_acls                    = var.key_vault_settings.network_acls
 
   depends_on = [azurerm_resource_group.this]
 }

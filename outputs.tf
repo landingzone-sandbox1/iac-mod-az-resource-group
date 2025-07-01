@@ -23,3 +23,18 @@ output "storage_account" {
   value       = module.storage_account.storage_account
 }
 
+output "key_vault_name" {
+  description = "The name of the Key Vault."
+  value       = module.key_vault.name
+}
+
+output "key_vault_id" {
+  description = "The resource ID of the Key Vault."
+  value       = module.key_vault.id
+}
+
+output "key_vault_resource" {
+  description = "The complete Azure Key Vault resource object"
+  value       = module.key_vault
+}
+

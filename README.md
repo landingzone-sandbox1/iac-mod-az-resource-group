@@ -16,6 +16,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
+| <a name="module_key_vault"></a> [key\_vault](#module\_key\_vault) | git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-key-vault.git | n/a |
 | <a name="module_log_analytics"></a> [log\_analytics](#module\_log\_analytics) | git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics | n/a |
 | <a name="module_storage_account"></a> [storage\_account](#module\_storage\_account) | git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account | n/a |
 
@@ -25,6 +26,7 @@
 |------|------|
 | [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/4.28/docs/resources/management_lock) | resource |
 | [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/4.28/docs/resources/resource_group) | resource |
+| [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/4.28/docs/data-sources/client_config) | data source |
 
 ## Inputs
 
@@ -36,6 +38,7 @@
 | <a name="input_diagnostic_categories"></a> [diagnostic\_categories](#input\_diagnostic\_categories) | List of diagnostic log categories to enable for the storage account. | `list(string)` | <pre>[<br/>  "StorageRead",<br/>  "StorageWrite",<br/>  "StorageDelete"<br/>]</pre> | no |
 | <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings) | Diagnostic settings for the storage account. | <pre>object({<br/>    enable_blob                = bool<br/>    enable_queue               = bool<br/>    enable_table               = bool<br/>    enable_file                = bool<br/>    enable_account             = bool<br/>    log_analytics_workspace_id = string<br/>  })</pre> | <pre>{<br/>  "enable_account": true,<br/>  "enable_blob": true,<br/>  "enable_file": false,<br/>  "enable_queue": false,<br/>  "enable_table": false,<br/>  "log_analytics_workspace_id": ""<br/>}</pre> | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Application environment (P, C, D, F). | `string` | n/a | yes |
+| <a name="input_key_vault_settings"></a> [key\_vault\_settings](#input\_key\_vault\_settings) | Configuration settings for the Key Vault. | <pre>object({<br/>    sku_name                        = string<br/>    enabled_for_disk_encryption     = bool<br/>    enabled_for_deployment          = bool<br/>    enabled_for_template_deployment = bool<br/>    purge_protection_enabled        = bool<br/>    soft_delete_retention_days      = number<br/>    public_network_access_enabled   = bool<br/>    network_acls = object({<br/>      bypass                     = string<br/>      default_action             = string<br/>      ip_rules                   = list(string)<br/>      virtual_network_subnet_ids = list(string)<br/>    })<br/>  })</pre> | <pre>{<br/>  "enabled_for_deployment": false,<br/>  "enabled_for_disk_encryption": true,<br/>  "enabled_for_template_deployment": false,<br/>  "network_acls": {<br/>    "bypass": "AzureServices",<br/>    "default_action": "Deny",<br/>    "ip_rules": [],<br/>    "virtual_network_subnet_ids": []<br/>  },<br/>  "public_network_access_enabled": false,<br/>  "purge_protection_enabled": true,<br/>  "sku_name": "premium",<br/>  "soft_delete_retention_days": 90<br/>}</pre> | no |
 | <a name="input_location"></a> [location](#input\_location) | Required. The Azure region for deployment of the this resource. | `string` | n/a | yes |
 | <a name="input_lock"></a> [lock](#input\_lock) | Controls the Resource Lock configuration for this resource. The following properties can be specified:<br/><br/>  - `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.<br/>  - `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource. | <pre>object({<br/>    kind = optional(string, "ReadOnly")<br/>    name = optional(string, null)<br/>  })</pre> | `null` | no |
 | <a name="input_naming"></a> [naming](#input\_naming) | Naming convention object for resource naming. | <pre>object({<br/>    application_code = string # 4 alphanumeric characters<br/>    region_code      = string # e.g., 'EU2'<br/>    environment      = string # P, C, D, F<br/>    correlative      = string # sequence identifier<br/>    objective_code   = string # 3-4 uppercase alphanumeric characters<br/>  })</pre> | n/a | yes |
@@ -50,6 +53,9 @@
 
 | Name | Description |
 |------|-------------|
+| <a name="output_key_vault_id"></a> [key\_vault\_id](#output\_key\_vault\_id) | The resource ID of the Key Vault. |
+| <a name="output_key_vault_name"></a> [key\_vault\_name](#output\_key\_vault\_name) | The name of the Key Vault. |
+| <a name="output_key_vault_resource"></a> [key\_vault\_resource](#output\_key\_vault\_resource) | The complete Azure Key Vault resource object |
 | <a name="output_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#output\_log\_analytics\_workspace\_id) | The resource ID of the Log Analytics workspace from the module. |
 | <a name="output_log_analytics_workspace_name"></a> [log\_analytics\_workspace\_name](#output\_log\_analytics\_workspace\_name) | The name of the Log Analytics workspace from the module. |
 | <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id) | The resource ID of the resource group. |
