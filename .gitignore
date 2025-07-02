@@ -76,3 +76,4 @@ usage.md
 **/module-source/
 child-module-source/iac-mod-az-log-analytics/
 child-module-source/iac-mod-az-storage-account/
+**/child-module-source/**

@@ -25,16 +25,15 @@ module "log_analytics" {
   #  source = "./child-module-source/iac-mod-az-log-analytics"
   # tflint-ignore: terraform_module_pinned_source
   source              = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
+  resource_group_name = azurerm_resource_group.this.name
   location            = var.location
-  resource_group_name = local.name
-
-  region_code      = var.region_code
-  objective_code   = var.objective_code
-  application_code = var.application_code
-  environment      = var.environment
-  correlative      = var.correlative
-  depends_on       = [azurerm_resource_group.this]
-  tags             = var.tags
+  region_code         = var.region_code
+  objective_code      = var.objective_code
+  application_code    = var.application_code
+  environment         = var.environment
+  correlative         = var.correlative
+  depends_on          = [azurerm_resource_group.this]
+  tags                = var.tags
 }
 
 # add storage account
@@ -44,7 +43,7 @@ module "storage_account" {
   # tflint-ignore: terraform_module_pinned_source
   source              = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
   location            = var.location
-  resource_group_name = local.name
+  resource_group_name = azurerm_resource_group.this.name
 
   # Pass object variables
   naming                    = var.naming
