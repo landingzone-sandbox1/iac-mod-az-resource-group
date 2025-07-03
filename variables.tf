@@ -18,7 +18,6 @@ variable "network_and_rbac_settings" {
 }
 
 
-
 variable "storage_container" {
   description = "Configuration for the storage container. Set to null to skip container creation."
   type = object({
@@ -31,20 +30,18 @@ variable "storage_container" {
 variable "diagnostic_settings" {
   description = "Diagnostic settings for the storage account."
   type = object({
-    enable_blob                = bool
-    enable_queue               = bool
-    enable_table               = bool
-    enable_file                = bool
-    enable_account             = bool
-    log_analytics_workspace_id = string
+    enable_blob    = bool
+    enable_queue   = bool
+    enable_table   = bool
+    enable_file    = bool
+    enable_account = bool
   })
   default = {
-    enable_blob                = true
-    enable_queue               = false
-    enable_table               = false
-    enable_file                = false
-    enable_account             = true
-    log_analytics_workspace_id = ""
+    enable_blob    = true
+    enable_queue   = true
+    enable_table   = true
+    enable_file    = true
+    enable_account = true
   }
 }
 
@@ -184,7 +181,6 @@ variable "objective_code" {
     condition     = var.objective_code == "" || can(regex("^[A-Za-z0-9]{3,4}$", var.objective_code))
     error_message = "When provided, objective code must be 3 or 4 alphanumeric characters (letters or numbers). See: https://github.com/landingzone-sandbox/wiki-landing-zone/wiki/ALZ-+-GEN-IA-Landing-Zone-(MS-English)-(M1)---Resource-Organization-Naming-Convention-Standards"
   }
-
 }
 
 variable "diagnostic_categories" {
@@ -211,41 +207,10 @@ variable "lock" {
     error_message = "Lock kind must be either `\"CanNotDelete\"` or `\"ReadOnly\"`."
   }
 }
+
+
 variable "tags" {
   type        = map(string)
   default     = null
   description = "(Optional) Tags of the resource."
-}
-
-
-# Consolidated naming object for all naming-related properties
-variable "naming" {
-  description = "Naming convention object for resource naming."
-  type = object({
-    application_code = string # 4 alphanumeric characters
-    region_code      = string # e.g., 'EU2'
-    environment      = string # P, C, D, F
-    correlative      = string # sequence identifier
-    objective_code   = string # 3-4 uppercase alphanumeric characters
-  })
-  validation {
-    condition     = can(regex("^[a-zA-Z0-9]{4}$", var.naming.application_code))
-    error_message = "The application_code must be exactly 4 alphanumeric characters."
-  }
-  validation {
-    condition     = can(regex("^[A-Z0-9]{2,}$", var.naming.region_code))
-    error_message = "The region_code must be uppercase letters and/or numbers (e.g., 'EU2')."
-  }
-  validation {
-    condition     = contains(["P", "C", "D", "F"], var.naming.environment)
-    error_message = "The environment must be one of: P, C, D, F."
-  }
-  validation {
-    condition     = length(trim(var.naming.correlative, " ")) > 0
-    error_message = "The correlative must not be empty."
-  }
-  validation {
-    condition     = can(regex("^[A-Z0-9]{3,4}$", var.naming.objective_code))
-    error_message = "The objective_code must be 3-4 uppercase alphanumeric characters."
-  }
 }
