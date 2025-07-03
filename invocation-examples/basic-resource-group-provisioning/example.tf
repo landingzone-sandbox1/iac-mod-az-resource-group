@@ -41,12 +41,6 @@ variable "location" {
   default     = "eastus2"
 }
 
-variable "region_code" {
-  description = "Short code for the Azure region (uppercase alphanumeric, e.g., 'EU2')."
-  type        = string
-  default     = "EU2"
-}
-
 variable "application_code" {
   description = "Application identifier (exactly 4 alphanumeric characters, e.g., 'AP01')."
   type        = string
@@ -94,7 +88,6 @@ module "resource_group" {
   key_vault_settings        = local.key_vault_settings
   # Pass naming components individually for modules that require them
   application_code = var.application_code
-  region_code      = var.region_code
   objective_code   = var.objective_code
   environment      = var.environment
   correlative      = var.correlative
@@ -104,7 +97,6 @@ locals {
   location = var.location
   naming = {
     application_code = var.application_code
-    region_code      = var.region_code
     environment      = var.environment
     correlative      = var.correlative
     objective_code   = var.objective_code

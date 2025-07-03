@@ -27,23 +27,23 @@ variable "storage_container" {
   default = null
 }
 
-variable "diagnostic_settings" {
-  description = "Diagnostic settings for the storage account."
-  type = object({
-    enable_blob    = bool
-    enable_queue   = bool
-    enable_table   = bool
-    enable_file    = bool
-    enable_account = bool
-  })
-  default = {
-    enable_blob    = true
-    enable_queue   = true
-    enable_table   = true
-    enable_file    = true
-    enable_account = true
-  }
-}
+#variable "diagnostic_settings" {
+#  description = "Diagnostic settings for the storage account."
+#  type = object({
+#    enable_blob    = bool
+#    enable_queue   = bool
+#    enable_table   = bool
+#    enable_file    = bool
+#    enable_account = bool
+#  })
+#  default = {
+#    enable_blob    = true
+#    enable_queue   = true
+#    enable_table   = true
+#    enable_file    = true
+#    enable_account = true
+#  }
+#}
 
 variable "storage_settings" {
   description = "General storage account settings."
@@ -127,11 +127,17 @@ variable "cost_management" {
 
 variable "location" {
   type        = string
-  description = "Required. The Azure region for deployment of the this resource."
+  description = "Required. The Azure region for deployment of this resource."
   nullable    = false
+
   validation {
     condition     = length(trim(var.location, " ")) > 0
     error_message = "The location must not be empty."
+  }
+
+  validation {
+    condition     = contains(keys(local.location_to_region_code), var.location)
+    error_message = "The location must be one of the supported Azure regions: ${join(", ", keys(local.location_to_region_code))}."
   }
 }
 
@@ -142,16 +148,6 @@ variable "application_code" {
   validation {
     condition     = can(regex("^[a-zA-Z0-9]{4}$", var.application_code))
     error_message = "The application_code must be exactly 4 alphanumeric characters."
-  }
-}
-
-variable "region_code" {
-  type        = string
-  description = "Region code (e.g., 'EU2'for EastUS2)."
-  nullable    = false
-  validation {
-    condition     = can(regex("^[A-Z0-9]{2,}$", var.region_code))
-    error_message = "The region_code must be uppercase letters and/or numbers (e.g., 'EU2')."
   }
 }
 
