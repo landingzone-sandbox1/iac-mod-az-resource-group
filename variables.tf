@@ -1,8 +1,30 @@
-variable "network_and_rbac_settings" {
-  description = "Network and RBAC configuration for the storage account."
+# Consolidated storage configuration as a single object variable
+variable "storage_config" {
+  description = <<-EOT
+    Comprehensive sub-modules configuration object containing all settings.
+    
+    Includes:
+    - naming: Naming convention settings (gonna be replaced by locals naming object)
+    - role_assignments: RBAC role assignments
+    - tags: Resource tags
+    - lock: Resource lock configuration
+    - firewall_ips: List of allowed IPv4 addresses
+    - vnet_subnet_ids: List of allowed Azure subnet resource IDs
+    - storage_settings: Storage account configuration
+    - storage_container: Container configuration
+    - retention_days: Data retention settings
+  EOT
   type = object({
-    firewall_ips    = optional(list(string), [])
-    vnet_subnet_ids = optional(list(string), [])
+    # Naming convention
+    naming = object({
+      application_code = string
+      region_code      = string
+      environment      = string
+      correlative      = string
+      objective_code   = string
+    })
+
+    # RBAC role assignments
     role_assignments = optional(map(object({
       role_definition_id_or_name             = string
       principal_id                           = string
@@ -13,19 +35,108 @@ variable "network_and_rbac_settings" {
       condition_version                      = optional(string, null)
       delegated_managed_identity_resource_id = optional(string, null)
     })), {})
+
+    # Resource tags
+    tags = optional(map(string), {})
+
+    # Resource lock configuration
+    lock = optional(object({
+      kind = string
+      name = string
+    }), null)
+
+    # Network settings
+    firewall_ips    = optional(list(string), [])
+    vnet_subnet_ids = optional(list(string), [])
+
+    # Storage settings
+    account_replication_type          = optional(string, "LRS")
+    account_tier                      = optional(string, "Standard")
+    account_kind                      = optional(string, "StorageV2")
+    access_tier                       = optional(string, "Hot")
+    large_file_share_enabled          = optional(bool, false)
+    is_hns_enabled                    = optional(bool, false)
+    nfsv3_enabled                     = optional(bool, false)
+    sftp_enabled                      = optional(bool, false)
+    queue_encryption_key_type         = optional(string, "Service")
+    table_encryption_key_type         = optional(string, "Service")
+    infrastructure_encryption_enabled = optional(bool, false)
+    blob_versioning_enabled           = optional(bool, false)
+    blob_change_feed_enabled          = optional(bool, false)
+
+    # Storage container configuration
+    storage_container = optional(object({
+      name                  = string
+      container_access_type = optional(string, "private")
+    }), null)
+
+    # Retention settings
+    retention_days = optional(number, 14)
   })
-  default = {}
+
+  # Validation for firewall IPs
+  validation {
+    condition = (
+      alltrue([
+        for ip in coalesce(var.storage_config.firewall_ips, []) : can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", ip))
+      ])
+    )
+    error_message = "Each firewall IP must be a valid IPv4 address."
+  }
+
+  # Validation for subnet IDs
+  validation {
+    condition = (
+      alltrue([
+        for id in coalesce(var.storage_config.vnet_subnet_ids, []) : can(regex("^/subscriptions/.+/resourceGroups/.+/providers/Microsoft.Network/virtualNetworks/.+/subnets/.+$", id))
+      ])
+    )
+    error_message = "Each subnet ID must be a valid Azure subnet resource ID."
+  }
+
+  # Validation for storage settings
+  validation {
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.storage_config.account_replication_type)
+    error_message = "Invalid value for account_replication_type."
+  }
+  validation {
+    condition     = contains(["Standard", "Premium"], var.storage_config.account_tier)
+    error_message = "Invalid value for account_tier."
+  }
+  validation {
+    condition     = contains(["BlobStorage", "BlockBlobStorage", "FileStorage", "Storage", "StorageV2"], var.storage_config.account_kind)
+    error_message = "Invalid value for account_kind."
+  }
+  validation {
+    condition     = contains(["Hot", "Cool"], var.storage_config.access_tier)
+    error_message = "Invalid value for access_tier."
+  }
+  validation {
+    condition     = contains(["Service", "Account"], var.storage_config.queue_encryption_key_type)
+    error_message = "queue_encryption_key_type must be 'Service' or 'Account'."
+  }
+  validation {
+    condition     = contains(["Service", "Account"], var.storage_config.table_encryption_key_type)
+    error_message = "table_encryption_key_type must be 'Service' or 'Account'."
+  }
+
+  # Validation for retention days
+  validation {
+    condition     = var.storage_config.retention_days >= 1 && var.storage_config.retention_days <= 365
+    error_message = "retention_days must be between 1 and 365."
+  }
+
+  # Validation for lock kind
+  validation {
+    condition = (
+      var.storage_config.lock == null ||
+      contains(["ReadOnly", "Delete"], var.storage_config.lock.kind)
+    )
+    error_message = "If lock is set, kind must be either 'ReadOnly' or 'Delete'."
+  }
+
 }
 
-
-variable "storage_container" {
-  description = "Configuration for the storage container. Set to null to skip container creation."
-  type = object({
-    name                  = string
-    container_access_type = optional(string, "private")
-  })
-  default = null
-}
 
 #variable "diagnostic_settings" {
 #  description = "Diagnostic settings for the storage account."
@@ -45,39 +156,6 @@ variable "storage_container" {
 #  }
 #}
 
-variable "storage_settings" {
-  description = "General storage account settings."
-  type = object({
-    account_replication_type          = string
-    account_tier                      = string
-    account_kind                      = string
-    access_tier                       = string
-    large_file_share_enabled          = bool
-    is_hns_enabled                    = bool
-    nfsv3_enabled                     = bool
-    sftp_enabled                      = bool
-    queue_encryption_key_type         = string
-    table_encryption_key_type         = string
-    infrastructure_encryption_enabled = bool
-    blob_versioning_enabled           = optional(bool, false)
-    blob_change_feed_enabled          = optional(bool, false)
-  })
-  default = {
-    account_replication_type          = "LRS"
-    account_tier                      = "Standard"
-    account_kind                      = "StorageV2"
-    access_tier                       = "Hot"
-    large_file_share_enabled          = false
-    is_hns_enabled                    = false
-    nfsv3_enabled                     = false
-    sftp_enabled                      = false
-    queue_encryption_key_type         = "Service"
-    table_encryption_key_type         = "Service"
-    infrastructure_encryption_enabled = false
-    blob_versioning_enabled           = false
-    blob_change_feed_enabled          = false
-  }
-}
 
 variable "key_vault_settings" {
   description = "Configuration settings for the Key Vault."

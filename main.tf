@@ -24,18 +24,17 @@ resource "azurerm_management_lock" "this" {
 module "log_analytics" {
   #source = "./child-module-source/iac-mod-az-log-analytics"
   # tflint-ignore: terraform_module_pinned_source
-  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
-  #  resource_group_name = azurerm_resource_group.this.name
-  location                  = var.location
-  region_code               = local.region_code
-  objective_code            = var.objective_code
-  application_code          = var.application_code
-  environment               = var.environment
-  correlative               = var.correlative
-  depends_on                = [azurerm_resource_group.this]
-  network_and_rbac_settings = var.network_and_rbac_settings
+  source              = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = var.location
+  objective_code      = var.objective_code
+  application_code    = var.application_code
+  environment         = var.environment
+  correlative         = var.correlative
+  role_assignments    = local.storage_config.role_assignments
+  tags                = var.tags
 
-  tags = var.tags
+  depends_on = [azurerm_resource_group.this]
 }
 
 # add storage account
@@ -47,13 +46,10 @@ module "storage_account" {
   resource_group_name = azurerm_resource_group.this.name
 
   # Pass object variables
-  naming                    = local.naming
-  network_and_rbac_settings = var.network_and_rbac_settings
-  storage_container         = var.storage_container
-  diagnostic_categories     = var.diagnostic_categories
+  storage_config        = local.storage_config
+  diagnostic_categories = var.diagnostic_categories
   #  diagnostic_settings       = var.diagnostic_settings
-  storage_settings = var.storage_settings
-  cost_management  = var.cost_management
+  cost_management = var.cost_management
 
   # Pass the workspace ID - use the provided one or the one from log_analytics module
   log_analytics_workspace_id = module.log_analytics.resource_id
@@ -62,7 +58,7 @@ module "storage_account" {
 }
 
 module "key_vault" {
-  #source = "./child-module-source/iac-mod-az-key-vault"
+  # source = "./child-module-source/iac-mod-az-key-vault"
   # tflint-ignore: terraform_module_pinned_source
   source           = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-key-vault.git"
   location         = var.location

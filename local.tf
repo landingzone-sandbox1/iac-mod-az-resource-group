@@ -31,6 +31,10 @@ locals {
   correlative      = var.correlative
   name             = "${local.service_code_rsg}${local.region_code}${local.application_code}${local.environment}${local.correlative}"
 
+  storage_config = merge(var.storage_config, {
+    naming = local.naming
+  })
+
   naming = {
     application_code = local.application_code
     region_code      = local.region_code
