@@ -1,19 +1,20 @@
 # Example: Basic Azure Resource Group with Storage and Analytics Provisioning
 #
-# This example provisions a Resource Group, Storage Account, and Log Analytics using the module.
+# This example provisions a Resource Group, Storage Account, Log Analytics, and Key Vault using the module.
+# Demonstrates the standardized interface with proper security defaults.
 #
 # Variables:
-#   - location: (string, required) Azure region for the resource group (e.g., "eastus2").
-#   - application_code: (string, required) Application identifier (exactly 4 alphanumeric characters, e.g., "AP01").
-#   - objective_code: (string, required) Purpose code for storage naming (3-4 uppercase alphanumeric chars, e.g., "CORE").
-#   - environment: (string, required) Environment code (one of: P, C, D, F).
-#   - correlative: (string, required) Unique identifier or numeric suffix (non-empty string, e.g., "01").
-#   - tags: (map(string), optional) Map of tags to assign to resources.
-#   - storage_config: (object, required) Consolidated storage configuration object.
-#   - diagnostic_categories: (list(string), required) Diagnostic log categories for storage account.
-#   - cost_management: (object, required) Cost management and tagging settings.
-#   - key_vault_settings: (object, required) Key Vault configuration settings.
-#   - lock: (object, optional) Resource lock configuration.
+#   - location: (string, required) Azure region - supports both 'eastus2' and 'East US 2' formats
+#   - application_code: (string, required) Application identifier (exactly 4 alphanumeric characters, e.g., "DEMO")
+#   - objective_code: (string, required) Purpose code - must be FRNT, BACK, SVLS, AZML, INFR, or SEGU
+#   - environment: (string, required) Environment code (P, C, D, F)
+#   - correlative: (string, required) 2-digit sequence identifier (e.g., "01", "02")
+#   - tags: (map(string), optional) Map of tags to assign to resources
+#   - storage_config: (object, required) Consolidated storage configuration object
+#   - diagnostic_categories: (list(string), required) Diagnostic log categories for storage account
+#   - cost_management: (object, required) Cost management and tagging settings
+#   - key_vault_settings: (object, required) Key Vault configuration with security defaults
+#   - lock: (object, optional) Resource lock configuration
 
 
 terraform {
@@ -31,9 +32,9 @@ provider "azurerm" {
 }
 
 variable "location" {
-  description = "Azure region for the resource group."
+  description = "Azure region for the resource group. Supports both normalized (e.g., 'eastus2') and display name (e.g., 'East US 2') formats."
   type        = string
-  default     = "eastus2"
+  default     = "East US 2" # Using display name format to demonstrate flexibility
 }
 
 variable "application_code" {
@@ -43,9 +44,9 @@ variable "application_code" {
 }
 
 variable "objective_code" {
-  description = "Purpose code for storage naming (3-4 uppercase alphanumeric chars, e.g., 'CORE')."
+  description = "Purpose code for storage naming. Must be one of: FRNT (Front-End), BACK (Back-End), SVLS (ServerLess), AZML (Machine Learning), INFR (Infrastructure), SEGU (Security)."
   type        = string
-  default     = "CORE"
+  default     = "INFR" # Changed from "CORE" to valid option
 }
 
 variable "environment" {
@@ -55,7 +56,7 @@ variable "environment" {
 }
 
 variable "correlative" {
-  description = "Unique identifier or numeric suffix (non-empty string, e.g., '01')."
+  description = "Correlative or sequence identifier (2-digit format, e.g., '01', '02')."
   type        = string
   default     = "01"
 }
@@ -70,32 +71,34 @@ variable "tags" {
 }
 
 module "resource_group" {
-source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-resource-group.git"
-  location         = var.location
-  application_code = var.application_code
-  objective_code   = var.objective_code
-  environment      = var.environment
-  correlative      = var.correlative
-  tags             = var.tags
-  storage_config   = local.storage_config
+  source = "../../" # Use relative path to the root module
+  # For production, use: source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-resource-group.git"
+
+  location              = var.location
+  application_code      = var.application_code
+  objective_code        = var.objective_code
+  environment           = var.environment
+  correlative           = var.correlative
+  tags                  = var.tags
+  storage_config        = local.storage_config
   diagnostic_categories = local.diagnostic_categories
-  cost_management  = local.cost_management
-  key_vault_settings = local.key_vault_settings
-  lock             = local.lock
+  cost_management       = local.cost_management
+  key_vault_settings    = local.key_vault_settings
+  lock                  = local.lock
 }
 
 locals {
   storage_config = {
-    # Naming convention (will be replaced by locals naming object)
+    # Naming convention (will be replaced by module's locals naming object)
     naming = {
       application_code = var.application_code
-      region_code      = "EUS2"
+      region_code      = "EU2" # This will be overridden by module's region mapping
       environment      = var.environment
       correlative      = var.correlative
       objective_code   = var.objective_code
     }
 
-    # RBAC role assignments
+    # RBAC role assignments (empty for basic example)
     role_assignments = {}
 
     # Resource tags
@@ -141,16 +144,16 @@ locals {
   }
 
   key_vault_settings = {
-    sku_name                        = "standard"
+    sku_name                        = "premium" # Changed from "standard" to "premium"
     enabled_for_disk_encryption     = true
     enabled_for_deployment          = false
     enabled_for_template_deployment = false
-    purge_protection_enabled        = false
+    purge_protection_enabled        = true # Changed from false to true
     soft_delete_retention_days      = 90
-    public_network_access_enabled   = true
+    public_network_access_enabled   = false # Changed from true to false (more secure)
     network_acls = {
       bypass                     = "AzureServices"
-      default_action             = "Allow"
+      default_action             = "Deny" # Changed from "Allow" to "Deny" (more secure)
       ip_rules                   = []
       virtual_network_subnet_ids = []
     }

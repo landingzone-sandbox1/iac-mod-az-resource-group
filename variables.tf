@@ -130,7 +130,7 @@ variable "storage_config" {
   validation {
     condition = (
       var.storage_config.lock == null ||
-      contains(["ReadOnly", "Delete"], var.storage_config.lock.kind)
+      try(contains(["ReadOnly", "Delete"], var.storage_config.lock.kind), false)
     )
     error_message = "If lock is set, kind must be either 'ReadOnly' or 'Delete'."
   }
@@ -205,7 +205,7 @@ variable "cost_management" {
 
 variable "location" {
   type        = string
-  description = "Required. The Azure region for deployment of this resource."
+  description = "Required. The Azure region for deployment of this resource. Supports both normalized form (e.g., 'eastus2') and display name form (e.g., 'East US 2')."
   nullable    = false
 
   validation {
@@ -215,7 +215,7 @@ variable "location" {
 
   validation {
     condition     = contains(keys(local.location_to_region_code), var.location)
-    error_message = "The location must be one of the supported Azure regions: ${join(", ", keys(local.location_to_region_code))}."
+    error_message = "The location must be one of the supported Azure regions. Supported formats include normalized forms (e.g., 'eastus2', 'westus2') and display names (e.g., 'East US 2', 'West US 2'). See local.tf for the complete list."
   }
 }
 

@@ -1,5 +1,6 @@
 # Variable files
 terraform.tfvars
+example.auto.tfvars
 
 ### https://raw.github.com/github/gitignore/abad92dac5a4306f72242dae3bca6e277bce3615/Terraform.gitignore
 
@@ -77,3 +78,4 @@ usage.md
 child-module-source/iac-mod-az-log-analytics/
 child-module-source/iac-mod-az-storage-account/
 **/child-module-source/**
+invocation-examples/basic-resource-group-provisioning/README.md
