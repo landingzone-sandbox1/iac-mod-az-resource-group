@@ -57,10 +57,12 @@ locals {
 
   service_code_rsg = "RSG"
   region_code      = lookup(local.location_to_region_code, var.location, "EUS2")
-  application_code = var.application_code
-  environment      = var.environment
-  correlative      = var.correlative
-  name             = "${local.service_code_rsg}${local.region_code}${local.application_code}${local.environment}${local.correlative}"
+  application_code = var.naming.application_code
+  environment      = var.naming.environment
+  correlative      = var.naming.correlative
+  # Resource Group name follows pattern: RSG[region(3)][application_code(4)][environment(1)][correlative(2)]
+  # This matches the Credicorp naming convention: [Service Code][Region][App/Service Code][Environment][Correlative]
+  name = "${local.service_code_rsg}${local.region_code}${local.application_code}${local.environment}${local.correlative}"
 
   storage_config = merge(var.storage_config, {
     naming = local.naming
@@ -71,6 +73,6 @@ locals {
     region_code      = local.region_code
     environment      = local.environment
     correlative      = local.correlative
-    objective_code   = var.objective_code
+    objective_code   = var.naming.objective_code
   }
 }

@@ -3,15 +3,15 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_resource_group" "this" {
   location = var.location
   name     = local.name
-  tags     = var.tags
+  tags     = var.resource_group_config.tags
 }
 resource "azurerm_management_lock" "this" {
-  count = var.lock != null ? 1 : 0
+  count = var.resource_group_config.lock != null ? 1 : 0
   # Microsoft Security Recommendation: Implement Resource Locks
-  lock_level = var.lock.kind
-  name       = coalesce(try(var.lock.name, null), "lock-${var.lock.kind}")
+  lock_level = var.resource_group_config.lock.kind
+  name       = coalesce(try(var.resource_group_config.lock.name, null), "lock-${var.resource_group_config.lock.kind}")
   scope      = azurerm_resource_group.this.id
-  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  notes      = var.resource_group_config.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
 
   depends_on = [
     module.storage_account,
@@ -20,6 +20,7 @@ resource "azurerm_management_lock" "this" {
   ]
 }
 
+# Log Analytics Workspace Module
 # Log Analytics Workspace Module
 module "log_analytics" {
   # source = "./child-module-source/iac-mod-az-log-analytics"
@@ -30,21 +31,13 @@ module "log_analytics" {
   location = var.location
   naming   = local.naming
 
-  log_analytics_config = {
-    # Security settings - enforce secure defaults
-    allow_resource_only_permissions = false
-    cmk_for_query_forced            = false
-    internet_ingestion_enabled      = false
-    internet_query_enabled          = false
-
-    # RBAC and tagging
-    role_assignments = local.storage_config.role_assignments
-    tags             = var.tags
-  }
+  resource_group_name  = azurerm_resource_group.this.name
+  log_analytics_config = var.log_analytics_config
 
   depends_on = [azurerm_resource_group.this]
 }
 
+# Storage Account Module
 # Storage Account Module
 module "storage_account" {
   # source = "./child-module-source/iac-mod-az-storage-account"
@@ -59,7 +52,6 @@ module "storage_account" {
   storage_config = merge(local.storage_config, {
     # Infrastructure dependencies
     log_analytics_workspace_id = module.log_analytics.resource_id
-    diagnostic_categories      = var.diagnostic_categories
 
     # Resource management (use existing RG created by this module)
     resource_group = {
@@ -67,14 +59,14 @@ module "storage_account" {
       name       = azurerm_resource_group.this.name
     }
 
-    # Tagging and cost management
-    tags           = merge(var.tags, var.cost_management.tags)
-    retention_days = var.cost_management.retention_days
+    # Additional tags from resource group config (storage_config already includes its own tags and retention_days)
+    tags = merge(var.storage_config.tags, var.resource_group_config.tags)
   })
 
   depends_on = [azurerm_resource_group.this, module.log_analytics]
 }
 
+# Key Vault Module
 # Key Vault Module
 module "key_vault" {
   # source = "./child-module-source/iac-mod-az-key-vault"
@@ -103,11 +95,11 @@ module "key_vault" {
 
     # Resource management
     resource_group_name = azurerm_resource_group.this.name
-    lock                = var.lock
+    lock                = var.resource_group_config.lock
 
     # RBAC and tagging
     role_assignments = local.storage_config.role_assignments
-    tags             = var.tags
+    tags             = var.resource_group_config.tags
   }
 
   depends_on = [azurerm_resource_group.this]

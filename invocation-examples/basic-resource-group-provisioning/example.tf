@@ -2,19 +2,15 @@
 #
 # This example provisions a Resource Group, Storage Account, Log Analytics, and Key Vault using the module.
 # Demonstrates the standardized interface with proper security defaults.
+# This example provisions a Resource Group, Storage Account, Log Analytics, and Key Vault using the module.
+# Demonstrates the standardized interface with proper security defaults.
 #
 # Variables:
 #   - location: (string, required) Azure region - supports both 'eastus2' and 'East US 2' formats
-#   - application_code: (string, required) Application identifier (exactly 4 alphanumeric characters, e.g., "DEMO")
-#   - objective_code: (string, required) Purpose code - must be FRNT, BACK, SVLS, AZML, INFR, or SEGU
-#   - environment: (string, required) Environment code (P, C, D, F)
-#   - correlative: (string, required) 2-digit sequence identifier (e.g., "01", "02")
-#   - tags: (map(string), optional) Map of tags to assign to resources
+#   - naming: (object, required) Naming convention object with application_code, environment, correlative, objective_code
+#   - resource_group_config: (object, required) Resource Group specific configuration (tags, lock)
 #   - storage_config: (object, required) Consolidated storage configuration object
-#   - diagnostic_categories: (list(string), required) Diagnostic log categories for storage account
-#   - cost_management: (object, required) Cost management and tagging settings
 #   - key_vault_settings: (object, required) Key Vault configuration with security defaults
-#   - lock: (object, optional) Resource lock configuration
 
 
 terraform {
@@ -29,6 +25,10 @@ terraform {
 
 provider "azurerm" {
   features {}
+  
+  # Use Azure AD authentication for storage operations instead of storage account keys
+  # This is required when storage accounts have shared_access_key_enabled = false
+  storage_use_azuread = true
 }
 
 variable "location" {
@@ -37,72 +37,46 @@ variable "location" {
   default     = "East US 2" # Using display name format to demonstrate flexibility
 }
 
-variable "application_code" {
-  description = "Application identifier (exactly 4 alphanumeric characters, e.g., 'AP01')."
-  type        = string
-  default     = "AP01"
-}
-
-variable "objective_code" {
-  description = "Purpose code for storage naming. Must be one of: FRNT (Front-End), BACK (Back-End), SVLS (ServerLess), AZML (Machine Learning), INFR (Infrastructure), SEGU (Security)."
-  type        = string
-  default     = "INFR" # Changed from "CORE" to valid option
-}
-
-variable "environment" {
-  description = "Environment code (one of: P, C, D, F)."
-  type        = string
-  default     = "D"
-}
-
-variable "correlative" {
-  description = "Correlative or sequence identifier (2-digit format, e.g., '01', '02')."
-  type        = string
-  default     = "01"
-}
-
-variable "tags" {
-  description = "Map of tags to assign to resources."
-  type        = map(string)
-  default = {
-    environment = "dev"
-    owner       = "app-team"
-  }
-}
-
 module "resource_group" {
   source = "../../" # Use relative path to the root module
   # For production, use: source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-resource-group.git"
 
-  location              = var.location
-  application_code      = var.application_code
-  objective_code        = var.objective_code
-  environment           = var.environment
-  correlative           = var.correlative
-  tags                  = var.tags
-  storage_config        = local.storage_config
-  diagnostic_categories = local.diagnostic_categories
-  cost_management       = local.cost_management
-  key_vault_settings    = local.key_vault_settings
-  lock                  = local.lock
-}
+  location = var.location
 
-locals {
+  # Naming convention
+  naming = {
+    application_code = "DEMO"  # Changed to 4 letters as required by storage account validation
+    environment      = "D"
+    correlative      = "01"
+    objective_code   = "INFR"
+  }
+
+  # Resource Group configuration
+  resource_group_config = {
+    tags = {
+      environment = "dev"
+      owner       = "app-team"
+      project     = "demo"
+    }
+    lock = null # No lock for this example
+  }
+
+  # Storage Account configuration (includes diagnostic categories)
   storage_config = {
     # Naming convention (will be replaced by module's locals naming object)
     naming = {
-      application_code = var.application_code
+      application_code = "DEMO"  # Changed to 4 letters as required by storage account validation
       region_code      = "EU2" # This will be overridden by module's region mapping
-      environment      = var.environment
-      correlative      = var.correlative
-      objective_code   = var.objective_code
+      environment      = "D"
+      correlative      = "01"
+      objective_code   = "INFR"
     }
 
     # RBAC role assignments (empty for basic example)
     role_assignments = {}
 
     # Resource tags
-    tags = var.tags
+    tags = {}
 
     # Resource lock configuration
     lock = null
@@ -110,6 +84,9 @@ locals {
     # Network settings
     firewall_ips    = []
     vnet_subnet_ids = []
+
+    # Diagnostic categories (specific to storage account)
+    diagnostic_categories = ["StorageRead", "StorageWrite", "StorageDelete"]
 
     # Storage settings
     account_replication_type          = "LRS"
@@ -136,30 +113,45 @@ locals {
     retention_days = 14
   }
 
-  diagnostic_categories = ["StorageRead", "StorageWrite", "StorageDelete"]
+  # Log Analytics configuration
+  log_analytics_config = {
+    # Security settings - enforce secure defaults
+    allow_resource_only_permissions = false
+    cmk_for_query_forced            = false
+    internet_ingestion_enabled      = false
+    internet_query_enabled          = false
 
-  cost_management = {
-    tags           = {}
-    retention_days = 14
+    # RBAC role assignments (empty for basic example)
+    role_assignments = {}
+
+    # Resource tags
+    tags = {
+      environment = "dev"
+      component   = "monitoring"
+    }
+
+    # Optional configurations (set to null for basic example)
+    customer_managed_key = null
+    identity             = null
+    timeouts             = null
   }
 
+  # Key Vault settings
   key_vault_settings = {
-    sku_name                        = "premium" # Changed from "standard" to "premium"
+    sku_name                        = "premium"
     enabled_for_disk_encryption     = true
     enabled_for_deployment          = false
     enabled_for_template_deployment = false
-    purge_protection_enabled        = true # Changed from false to true
+    purge_protection_enabled        = true
     soft_delete_retention_days      = 90
-    public_network_access_enabled   = false # Changed from true to false (more secure)
+    public_network_access_enabled   = false
     network_acls = {
       bypass                     = "AzureServices"
-      default_action             = "Deny" # Changed from "Allow" to "Deny" (more secure)
+      default_action             = "Deny"
       ip_rules                   = []
       virtual_network_subnet_ids = []
     }
   }
-
-  lock = null
 }
 
 # Outputs

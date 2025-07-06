@@ -137,26 +137,6 @@ variable "storage_config" {
 
 }
 
-
-#variable "diagnostic_settings" {
-#  description = "Diagnostic settings for the storage account."
-#  type = object({
-#    enable_blob    = bool
-#    enable_queue   = bool
-#    enable_table   = bool
-#    enable_file    = bool
-#    enable_account = bool
-#  })
-#  default = {
-#    enable_blob    = true
-#    enable_queue   = true
-#    enable_table   = true
-#    enable_file    = true
-#    enable_account = true
-#  }
-#}
-
-
 variable "key_vault_settings" {
   description = "Configuration settings for the Key Vault."
   type = object({
@@ -191,18 +171,7 @@ variable "key_vault_settings" {
   }
 }
 
-variable "cost_management" {
-  description = "Cost management and tagging settings."
-  type = object({
-    tags           = map(string)
-    retention_days = number
-  })
-  default = {
-    tags           = {}
-    retention_days = 14
-  }
-}
-
+# Core module inputs
 variable "location" {
   type        = string
   description = "Required. The Azure region for deployment of this resource. Supports both normalized form (e.g., 'eastus2') and display name form (e.g., 'East US 2')."
@@ -219,72 +188,190 @@ variable "location" {
   }
 }
 
-variable "application_code" {
-  type        = string
-  description = "Application code or service code."
-  nullable    = false
+variable "naming" {
+  description = "Naming convention settings for all resources."
+  type = object({
+    application_code = string
+    environment      = string
+    correlative      = string
+    objective_code   = string
+  })
+  nullable = false
+
   validation {
-    condition     = can(regex("^[a-zA-Z0-9]{4}$", var.application_code))
+    condition     = can(regex("^[a-zA-Z0-9]{4}$", var.naming.application_code))
     error_message = "The application_code must be exactly 4 alphanumeric characters."
   }
-}
 
-variable "environment" {
-  type        = string
-  description = "Application environment (P, C, D, F)."
-  nullable    = false
   validation {
-    condition     = contains(["P", "C", "D", "F"], var.environment)
+    condition     = contains(["P", "C", "D", "F"], var.naming.environment)
     error_message = "The environment must be one of: P, C, D, F."
   }
-}
 
-variable "correlative" {
-  description = "Correlative or sequence identifier for the resource group."
-  type        = string
   validation {
-    condition     = length(trim(var.correlative, " ")) > 0
+    condition     = length(trim(var.naming.correlative, " ")) > 0
     error_message = "The correlative must not be empty."
   }
-}
 
-variable "objective_code" {
-  description = "A 3 to 4 character code conveying a meaningful purpose for the resource (e.g., core, mgmt)."
-  type        = string
   validation {
-    condition     = var.objective_code == "" || can(regex("^[A-Za-z0-9]{3,4}$", var.objective_code))
-    error_message = "When provided, objective code must be 3 or 4 alphanumeric characters (letters or numbers). See: https://github.com/landingzone-sandbox/wiki-landing-zone/wiki/ALZ-+-GEN-IA-Landing-Zone-(MS-English)-(M1)---Resource-Organization-Naming-Convention-Standards"
+    condition     = var.naming.objective_code == "" || can(regex("^[A-Za-z0-9]{3,4}$", var.naming.objective_code))
+    error_message = "When provided, objective code must be 3 or 4 alphanumeric characters (letters or numbers)."
   }
 }
 
-variable "diagnostic_categories" {
-  description = "List of diagnostic log categories to enable for the storage account."
-  type        = list(string)
-  default     = ["StorageRead", "StorageWrite", "StorageDelete"]
-}
-
-variable "lock" {
+# Resource Group specific configuration
+variable "resource_group_config" {
+  description = <<-EOT
+    Resource Group specific configuration settings.
+    
+    Includes:
+    - tags: Resource tags for the resource group
+    - lock: Resource lock configuration
+  EOT
   type = object({
-    kind = optional(string, "ReadOnly")
-    name = optional(string, null)
+    # Resource tags
+    tags = optional(map(string), {})
+
+    # Resource lock configuration
+    lock = optional(object({
+      kind = optional(string, "ReadOnly")
+      name = optional(string, null)
+    }), null)
   })
-  default     = null
-  description = <<DESCRIPTION
-  Controls the Resource Lock configuration for this resource. The following properties can be specified:
-  
-  - `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
-  - `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource.
-  DESCRIPTION
+  default = {
+    tags = {}
+    lock = null
+  }
 
   validation {
-    condition     = var.lock != null ? contains(["CanNotDelete", "ReadOnly"], var.lock.kind) : true
-    error_message = "Lock kind must be either `\"CanNotDelete\"` or `\"ReadOnly\"`."
+    condition     = var.resource_group_config.lock != null ? contains(["CanNotDelete", "ReadOnly"], var.resource_group_config.lock.kind) : true
+    error_message = "Lock kind must be either \"CanNotDelete\" or \"ReadOnly\"."
   }
 }
 
+variable "log_analytics_config" {
+  description = "Configuration settings for the Log Analytics Workspace."
+  type = object({
+    # Workspace permissions and security
+    allow_resource_only_permissions = optional(bool, false)
+    cmk_for_query_forced            = optional(bool, false)
+    internet_ingestion_enabled      = optional(bool, false)
+    internet_query_enabled          = optional(bool, false)
 
-variable "tags" {
-  type        = map(string)
-  default     = null
-  description = "(Optional) Tags of the resource."
+    # Customer Managed Key configuration
+    customer_managed_key = optional(object({
+      key_vault_resource_id = string
+      key_name              = string
+      key_version           = optional(string, null)
+      user_assigned_identity = optional(object({
+        resource_id = string
+      }), null)
+    }), null)
+
+    # Managed identity configuration
+    identity = optional(object({
+      identity_ids = optional(set(string))
+      type         = string
+    }), null)
+
+    # RBAC role assignments
+    role_assignments = optional(map(object({
+      role_definition_id_or_name             = string
+      principal_id                           = string
+      principal_type                         = string
+      description                            = optional(string, null)
+      skip_service_principal_aad_check       = optional(bool, false)
+      condition                              = optional(string, null)
+      condition_version                      = optional(string, null)
+      delegated_managed_identity_resource_id = optional(string, null)
+    })), {})
+
+    # Resource tags
+    tags = optional(map(string), {})
+
+    # Timeout configuration
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), null)
+  })
+  default = {
+    # Security settings - enforce secure defaults
+    allow_resource_only_permissions = false
+    cmk_for_query_forced            = false
+    internet_ingestion_enabled      = false
+    internet_query_enabled          = false
+
+    # Empty defaults for optional configurations
+    customer_managed_key = null
+    identity             = null
+    role_assignments     = {}
+    tags                 = {}
+    timeouts             = null
+  }
+
+  # Validate identity configuration
+  validation {
+    condition = (
+      var.log_analytics_config.identity == null ||
+      contains(["SystemAssigned", "UserAssigned"], try(var.log_analytics_config.identity.type, ""))
+    )
+    error_message = "If identity is set, type must be either 'SystemAssigned' or 'UserAssigned'."
+  }
+
+  # Validate identity_ids for UserAssigned type
+  validation {
+    condition = (
+      var.log_analytics_config.identity == null ||
+      try(var.log_analytics_config.identity.type, null) != "UserAssigned" ||
+      try(var.log_analytics_config.identity.identity_ids, null) != null
+    )
+    error_message = "When identity type is 'UserAssigned', identity_ids must be provided."
+  }
+
+  # Validate customer_managed_key configuration
+  validation {
+    condition = (
+      var.log_analytics_config.customer_managed_key == null ||
+      (try(var.log_analytics_config.customer_managed_key.key_vault_resource_id, null) != null &&
+      try(var.log_analytics_config.customer_managed_key.key_name, null) != null)
+    )
+    error_message = "If customer_managed_key is set, both key_vault_resource_id and key_name must be provided."
+  }
+
+  # Validate role assignment principal types
+  validation {
+    condition = (
+      length(coalesce(var.log_analytics_config.role_assignments, {})) == 0 ||
+      alltrue([
+        for ra in values(var.log_analytics_config.role_assignments) : (
+          contains(["ServicePrincipal", "ManagedIdentity"], ra.principal_type)
+        )
+      ])
+    )
+    error_message = "If set, all role assignments must have principal_type set to 'ServicePrincipal' or 'ManagedIdentity'."
+  }
+
+  # Enforce least-privilege roles only
+  validation {
+    condition = (
+      length(coalesce(var.log_analytics_config.role_assignments, {})) == 0 ||
+      alltrue([
+        for ra in values(var.log_analytics_config.role_assignments) : (
+          contains([
+            # Log Analytics specific roles (read-only for least privilege)
+            "Log Analytics Reader",
+            # Monitoring roles (read-only and metrics publishing only)
+            "Monitoring Reader",
+            "Monitoring Metrics Publisher",
+            # Security roles (read-only only)
+            "Security Reader"
+          ], ra.role_definition_id_or_name)
+        )
+      ])
+    )
+    error_message = "Only true least-privilege roles are allowed: Log Analytics Reader, Monitoring Reader, Monitoring Metrics Publisher, Security Reader. Administrative roles like Contributors, Admins, Owners are not permitted."
+  }
 }
