@@ -1,17 +1,24 @@
-# Example: Basic Azure Resource Group with Storage and Analytics Provisioning
+# =============================================================================
+# AZURE RESOURCE GROUP MODULE - BASIC EXAMPLE
+# =============================================================================
 #
-# This example provisions a Resource Group, Storage Account, Log Analytics, and Key Vault using the module.
-# Demonstrates the standardized interface with proper security defaults.
-# This example provisions a Resource Group, Storage Account, Log Analytics, and Key Vault using the module.
-# Demonstrates the standardized interface with proper security defaults.
+# This example demonstrates the modern, clean interface of the resource group 
+# module. It creates a resource group with Log Analytics, Storage Account, and 
+# Key Vault using standardized naming conventions and security defaults.
 #
-# Variables:
-#   - location: (string, required) Azure region - supports both 'eastus2' and 'East US 2' formats
-#   - naming: (object, required) Naming convention object with application_code, environment, correlative, objective_code
-#   - resource_group_config: (object, required) Resource Group specific configuration (tags, lock)
-#   - storage_config: (object, required) Consolidated storage configuration object
-#   - key_vault_settings: (object, required) Key Vault configuration with security defaults
-
+# Features demonstrated:
+# - Credicorp naming conventions for all resources
+# - Secure defaults for all services
+# - Proper RBAC and access controls
+# - Cost management and tagging
+# - Infrastructure encryption and monitoring
+#
+# To use this example:
+# 1. Copy this file to your project directory
+# 2. Modify the variables to match your environment
+# 3. Run: terraform init && terraform plan && terraform apply
+#
+# =============================================================================
 
 terraform {
   required_version = ">= 1.9"
@@ -25,167 +32,197 @@ terraform {
 
 provider "azurerm" {
   features {}
-  
-  # Use Azure AD authentication for storage operations instead of storage account keys
-  # This is required when storage accounts have shared_access_key_enabled = false
+  # Use Azure AD authentication for enhanced security
   storage_use_azuread = true
 }
 
-variable "location" {
-  description = "Azure region for the resource group. Supports both normalized (e.g., 'eastus2') and display name (e.g., 'East US 2') formats."
-  type        = string
-  default     = "East US 2" # Using display name format to demonstrate flexibility
-}
+# =============================================================================
+# MODULE CALL
+# =============================================================================
 
 module "resource_group" {
-  source = "../../" # Use relative path to the root module
-  # For production, use: source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-resource-group.git"
+  source = "../../" # Relative path to the root module
 
-  location = var.location
+  # Core configuration
+  location = "East US 2"
 
-  # Naming convention
+  # Naming convention following Credicorp standards
   naming = {
-    application_code = "DEMO"  # Changed to 4 letters as required by storage account validation
-    environment      = "D"
-    correlative      = "01"
-    objective_code   = "INFR"
+    application_code = "DEMO" # 4-character application code
+    environment      = "D"    # D=Development, T=Testing, P=Production, F=Formal
+    correlative      = "01"   # Two-digit correlative
+    objective_code   = "INFR" # Infrastructure objective code
   }
 
-  # Resource Group configuration
+  # Resource group configuration
   resource_group_config = {
     tags = {
-      environment = "dev"
-      owner       = "app-team"
-      project     = "demo"
+      "Environment" = "Development"
+      "Project"     = "Demo Infrastructure"
+      "Owner"       = "Infrastructure Team"
+      "CreatedBy"   = "Terraform"
+      "CostCenter"  = "IT-001"
     }
-    lock = null # No lock for this example
+    # Uncomment to enable resource lock
+    # lock = {
+    #   kind = "ReadOnly"     # or "CanNotDelete"
+    #   name = "infra-lock"
+    # }
   }
 
-  # Storage Account configuration (includes diagnostic categories)
+  # Storage account configuration
   storage_config = {
-    # Naming convention (will be replaced by module's locals naming object)
-    naming = {
-      application_code = "DEMO"  # Changed to 4 letters as required by storage account validation
-      region_code      = "EU2" # This will be overridden by module's region mapping
-      environment      = "D"
-      correlative      = "01"
-      objective_code   = "INFR"
+    # Log Analytics workspace dependency (will be filled by module)
+    log_analytics_workspace_id = "" # Filled automatically by module
+
+    # Resource group configuration (use the one created by this module)
+    resource_group = {
+      create_new = false # Use existing RG created by this module
+      name       = null  # Will be filled automatically
     }
 
     # RBAC role assignments (empty for basic example)
+    # For production, add specific role assignments for service principals
     role_assignments = {}
 
-    # Resource tags
-    tags = {}
+    # Resource tags specific to storage
+    tags = {
+      "Component"  = "Storage"
+      "DataType"   = "Infrastructure"
+      "Backup"     = "Enabled"
+      "Encryption" = "Enabled"
+      "Monitoring" = "Enabled"
+    }
+
+    # Data retention settings
+    retention_days = 30
 
     # Resource lock configuration
-    lock = null
+    # lock = {
+    #   kind = "ReadOnly"
+    #   name = "storage-lock"
+    # }
 
-    # Network settings
-    firewall_ips    = []
-    vnet_subnet_ids = []
+    # Network security settings
+    firewall_ips = [
+      "203.0.113.10", # Example corporate IP range
+      "203.0.113.20"  # Example VPN gateway IP
+    ]
+    vnet_subnet_ids = [] # Add subnet resource IDs for VNet integration
 
-    # Diagnostic categories (specific to storage account)
-    diagnostic_categories = ["StorageRead", "StorageWrite", "StorageDelete"]
+    # Diagnostic log categories
+    diagnostic_categories = [
+      "StorageRead",
+      "StorageWrite",
+      "StorageDelete"
+    ]
 
-    # Storage settings
-    account_replication_type          = "LRS"
-    account_tier                      = "Standard"
-    account_kind                      = "StorageV2"
-    access_tier                       = "Hot"
+    # Storage account performance and replication
+    account_replication_type = "LRS"       # Locally redundant storage
+    account_tier             = "Standard"  # Standard performance tier
+    account_kind             = "StorageV2" # General-purpose v2
+    access_tier              = "Hot"       # Hot access tier for frequently accessed data
+
+    # Advanced storage features
     large_file_share_enabled          = false
-    is_hns_enabled                    = false
+    is_hns_enabled                    = false # Hierarchical namespace (Data Lake Gen2)
     nfsv3_enabled                     = false
     sftp_enabled                      = false
-    queue_encryption_key_type         = "Service"
-    table_encryption_key_type         = "Service"
-    infrastructure_encryption_enabled = false
-    blob_versioning_enabled           = false
-    blob_change_feed_enabled          = false
+    queue_encryption_key_type         = "Service" # Microsoft-managed keys
+    table_encryption_key_type         = "Service" # Microsoft-managed keys
+    infrastructure_encryption_enabled = false     # Double encryption
+    blob_versioning_enabled           = true      # Enable blob versioning
+    blob_change_feed_enabled          = false     # Change feed for blob events
 
     # Storage container configuration
     storage_container = {
-      name                  = "default"
-      container_access_type = "private"
+      name                  = "infrastructure-data"
+      container_access_type = "private" # Private access only
     }
 
-    # Retention settings
-    retention_days = 14
+    # Customer-managed key configuration (optional)
+    # customer_managed_key = {
+    #   key_vault_resource_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.KeyVault/vaults/..."
+    #   key_name              = "storage-encryption-key"
+    # }
+
+    # Cross-tenant replication settings
+    cross_tenant_replication_enabled = false
+    allowed_copy_scope               = "AAD" # Restrict to Azure AD tenant
+
+    # Local user configuration for SFTP (if enabled)
+    local_user = {}
   }
 
-  # Log Analytics configuration
-  log_analytics_config = {
-    # Security settings - enforce secure defaults
-    allow_resource_only_permissions = false
-    cmk_for_query_forced            = false
-    internet_ingestion_enabled      = false
-    internet_query_enabled          = false
-
-    # RBAC role assignments (empty for basic example)
-    role_assignments = {}
-
-    # Resource tags
-    tags = {
-      environment = "dev"
-      component   = "monitoring"
-    }
-
-    # Optional configurations (set to null for basic example)
-    customer_managed_key = null
-    identity             = null
-    timeouts             = null
-  }
-
-  # Key Vault settings
+  # Key Vault configuration
   key_vault_settings = {
-    sku_name                        = "premium"
-    enabled_for_disk_encryption     = true
-    enabled_for_deployment          = false
-    enabled_for_template_deployment = false
-    purge_protection_enabled        = true
-    soft_delete_retention_days      = 90
-    public_network_access_enabled   = false
+    sku_name                        = "premium" # Premium SKU for hardware security
+    enabled_for_disk_encryption     = true      # Allow disk encryption
+    enabled_for_deployment          = false     # Disable VM deployment access
+    enabled_for_template_deployment = false     # Disable ARM template access
+    purge_protection_enabled        = true      # Enable purge protection
+    soft_delete_retention_days      = 90        # 90-day retention for deleted keys
+    public_network_access_enabled   = false     # Disable public access
+
     network_acls = {
-      bypass                     = "AzureServices"
-      default_action             = "Deny"
-      ip_rules                   = []
-      virtual_network_subnet_ids = []
+      bypass         = "AzureServices" # Allow Azure services
+      default_action = "Deny"          # Deny all by default
+      ip_rules = [
+        "203.0.113.1", # Example corporate IP
+        "203.0.113.2"  # Example admin workstation IP
+      ]
+      virtual_network_subnet_ids = [] # Add subnet IDs for VNet access
     }
   }
 }
 
-# Outputs
+# =============================================================================
+# OUTPUTS
+# =============================================================================
+
 output "resource_group_name" {
-  description = "The name of the resource group."
+  description = "The name of the created resource group"
   value       = module.resource_group.resource_group_name
 }
 
 output "resource_group_id" {
-  description = "The resource ID of the resource group."
+  description = "The Azure resource ID of the resource group"
   value       = module.resource_group.resource_group_id
 }
 
 output "log_analytics_workspace_name" {
-  description = "The name of the Log Analytics workspace."
+  description = "The name of the Log Analytics workspace"
   value       = module.resource_group.log_analytics_workspace_name
 }
 
 output "log_analytics_workspace_id" {
-  description = "The resource ID of the Log Analytics workspace."
+  description = "The Azure resource ID of the Log Analytics workspace"
   value       = module.resource_group.log_analytics_workspace_id
 }
 
 output "storage_account" {
-  description = "Object containing key storage account outputs."
+  description = "Storage account details and configuration"
   value       = module.resource_group.storage_account
+  sensitive   = true # Mark as sensitive due to potential access keys
 }
 
 output "key_vault_name" {
-  description = "The name of the Key Vault."
+  description = "The name of the Key Vault"
   value       = module.resource_group.key_vault_name
 }
 
 output "key_vault_id" {
-  description = "The resource ID of the Key Vault."
+  description = "The Azure resource ID of the Key Vault"
   value       = module.resource_group.key_vault_id
+}
+
+output "resource_naming_convention" {
+  description = "The naming convention used for all resources"
+  value = {
+    resource_group_name = module.resource_group.resource_group_name
+    pattern             = "RSG<region><app_code><env><correlative>"
+    application_code    = "DEMO"
+    environment         = "D"
+    correlative         = "01"
+  }
 }

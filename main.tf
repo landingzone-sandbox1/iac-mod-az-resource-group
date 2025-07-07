@@ -3,13 +3,17 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_resource_group" "this" {
   location = var.location
   name     = local.name
-  tags     = var.resource_group_config.tags
+  # Support both new resource_group_config object and legacy individual variables
+  tags = try(var.resource_group_config.tags, {})
+
 }
+
 resource "azurerm_management_lock" "this" {
   count = var.resource_group_config.lock != null ? 1 : 0
+
   # Microsoft Security Recommendation: Implement Resource Locks
   lock_level = var.resource_group_config.lock.kind
-  name       = coalesce(try(var.resource_group_config.lock.name, null), "lock-${var.resource_group_config.lock.kind}")
+  name       = coalesce(var.resource_group_config.lock.name, "lock-${var.resource_group_config.lock.kind}")
   scope      = azurerm_resource_group.this.id
   notes      = var.resource_group_config.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
 
@@ -31,8 +35,16 @@ module "log_analytics" {
   location = var.location
   naming   = local.naming
 
-  resource_group_name  = azurerm_resource_group.this.name
-  log_analytics_config = var.log_analytics_config
+  log_analytics_config = merge(var.log_analytics_config, {
+    # Resource management (override with actual resource group name)
+    resource_group_name = azurerm_resource_group.this.name
+
+    # Merge tags from variable and resource group config
+    tags = merge(
+      var.log_analytics_config.tags,
+      var.resource_group_config.tags
+    )
+  })
 
   depends_on = [azurerm_resource_group.this]
 }

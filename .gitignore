@@ -79,3 +79,7 @@ child-module-source/iac-mod-az-log-analytics/
 child-module-source/iac-mod-az-storage-account/
 **/child-module-source/**
 invocation-examples/basic-resource-group-provisioning/README.md
+
+
+# Ignore example.auto.tfvars file
+example.auto.tfvars
