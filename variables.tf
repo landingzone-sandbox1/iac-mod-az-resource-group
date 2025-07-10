@@ -35,8 +35,8 @@ variable "naming" {
     error_message = "application_code must be exactly 4 alphanumeric characters."
   }
   validation {
-    condition     = contains(["D", "T", "P", "F"], upper(var.naming.environment))
-    error_message = "environment must be one of: D (Development), T (Testing), P (Production), F (Formal)."
+    condition     = contains(["D", "C", "P", "F"], upper(var.naming.environment))
+    error_message = "environment must be one of: D (Development), C (Certification), P (Production), F (Formal)."
   }
   validation {
     condition     = can(regex("^[0-9]{2}$", var.naming.correlative))
@@ -82,14 +82,14 @@ variable "resource_group_config" {
 variable "storage_config" {
   description = "Configuration object for the storage account module."
   type = object({
-    # Required infrastructure settings
-    log_analytics_workspace_id = string
+    # Infrastructure settings (provided by orchestration)
+    log_analytics_workspace_id = optional(string, null)
 
-    # Resource Group configuration
-    resource_group = object({
+    # Resource Group configuration (provided by orchestration)
+    resource_group = optional(object({
       create_new = bool
       name       = optional(string, null)
-    })
+    }), null)
 
     # RBAC role assignments
     role_assignments = optional(map(object({
@@ -106,115 +106,8 @@ variable "storage_config" {
     # Resource tags and retention
     tags           = optional(map(string), {})
     retention_days = optional(number, 14)
-
-    # Resource lock configuration
-    lock = optional(object({
-      kind = string
-      name = optional(string, null)
-    }), null)
-
-    # Network security settings
-    firewall_ips    = optional(list(string), [])
-    vnet_subnet_ids = optional(list(string), [])
-
-    # Diagnostic settings
-    diagnostic_categories = optional(list(string), ["StorageRead", "StorageWrite", "StorageDelete"])
-
-    # Customer-managed encryption
-    customer_managed_key = optional(object({
-      key_vault_resource_id = string
-      key_name              = string
-    }), null)
-
-    # Storage access and replication settings
-    allowed_copy_scope               = optional(string, "AAD")
-    cross_tenant_replication_enabled = optional(bool, false)
-    edge_zone                        = optional(string, null)
-
-    # Storage account settings
-    account_replication_type          = optional(string, "LRS")
-    account_tier                      = optional(string, "Standard")
-    account_kind                      = optional(string, "StorageV2")
-    access_tier                       = optional(string, "Hot")
-    large_file_share_enabled          = optional(bool, false)
-    is_hns_enabled                    = optional(bool, false)
-    nfsv3_enabled                     = optional(bool, false)
-    sftp_enabled                      = optional(bool, false)
-    queue_encryption_key_type         = optional(string, "Service")
-    table_encryption_key_type         = optional(string, "Service")
-    infrastructure_encryption_enabled = optional(bool, false)
-    blob_versioning_enabled           = optional(bool, false)
-    blob_change_feed_enabled          = optional(bool, false)
-
-    # Local user configuration for SFTP
-    local_user = optional(map(object({
-      name                 = string
-      ssh_key_enabled      = optional(bool, false)
-      ssh_password_enabled = optional(bool, false)
-      permission_scope = optional(list(object({
-        resource_name = string
-        service       = string
-        permissions = object({
-          create = optional(bool, false)
-          delete = optional(bool, false)
-          list   = optional(bool, false)
-          read   = optional(bool, false)
-          write  = optional(bool, false)
-        })
-      })), [])
-      ssh_authorized_key = optional(list(object({
-        description = optional(string, null)
-        key         = string
-      })), [])
-      timeouts = optional(object({
-        create = optional(string, null)
-        delete = optional(string, null)
-        read   = optional(string, null)
-        update = optional(string, null)
-      }), null)
-    })), {})
-
-    # Storage container configuration
-    storage_container = optional(object({
-      name                  = string
-      container_access_type = optional(string, "private")
-    }), null)
   })
-}
-
-# Key Vault module configuration
-variable "key_vault_settings" {
-  description = "Configuration settings for the Key Vault."
-  type = object({
-    sku_name                        = string
-    enabled_for_disk_encryption     = bool
-    enabled_for_deployment          = bool
-    enabled_for_template_deployment = bool
-    purge_protection_enabled        = bool
-    soft_delete_retention_days      = number
-    public_network_access_enabled   = bool
-    network_acls = object({
-      bypass                     = string
-      default_action             = string
-      ip_rules                   = list(string)
-      virtual_network_subnet_ids = list(string)
-    })
-  })
-  default = {
-    sku_name                        = "standard"
-    enabled_for_disk_encryption     = true
-    enabled_for_deployment          = false
-    enabled_for_template_deployment = false
-    purge_protection_enabled        = true
-    soft_delete_retention_days      = 90
-    public_network_access_enabled   = false
-    network_acls = {
-      bypass                     = "AzureServices"
-      default_action             = "Deny"
-      ip_rules                   = []
-      virtual_network_subnet_ids = []
-    }
-  }
+  default = {}
 }
 
 # Log Analytics module configuration
@@ -227,65 +120,35 @@ variable "log_analytics_config" {
     internet_ingestion_enabled      = optional(bool, false)
     internet_query_enabled          = optional(bool, false)
 
-    # Customer Managed Key configuration
-    customer_managed_key = optional(object({
-      key_vault_resource_id = string
-      key_name              = string
-      key_version           = optional(string, null)
-      user_assigned_identity = optional(object({
-        resource_id = string
-      }), null)
-    }), null)
-
-    # Managed identity configuration
-    identity = optional(object({
-      identity_ids = optional(set(string))
-      type         = string
-    }), null)
-
-    # Timeout configuration
-    timeouts = optional(object({
-      create = optional(string, null)
-      delete = optional(string, null)
-      read   = optional(string, null)
-      update = optional(string, null)
-    }), null)
-
     # Resource tags
     tags = optional(map(string), {})
-
-    # RBAC role assignments
-    role_assignments = optional(map(object({
-      role_definition_id_or_name             = string
-      principal_id                           = string
-      principal_type                         = string
-      description                            = optional(string, null)
-      skip_service_principal_aad_check       = optional(bool, false)
-      condition                              = optional(string, null)
-      condition_version                      = optional(string, null)
-      delegated_managed_identity_resource_id = optional(string, null)
-    })), {})
   })
-  default = {
-    # Security settings - enforce secure defaults
-    allow_resource_only_permissions = false
-    cmk_for_query_forced            = false
-    internet_ingestion_enabled      = false
-    internet_query_enabled          = false
+  default = {}
+}
 
-    # No customer managed key by default
-    customer_managed_key = null
-
-    # No managed identity by default
-    identity = null
-
-    # No custom timeouts by default
-    timeouts = null
-
-    # Empty tags by default
-    tags = {}
-
-    # No role assignments by default
-    role_assignments = {}
-  }
+# Key Vault module configuration
+variable "keyvault_config" {
+  description = "Configuration settings for the Key Vault."
+  type = object({
+    sku_name                        = optional(string, "standard")
+    enabled_for_disk_encryption     = optional(bool, true)
+    enabled_for_deployment          = optional(bool, false)
+    enabled_for_template_deployment = optional(bool, false)
+    purge_protection_enabled        = optional(bool, true)
+    soft_delete_retention_days      = optional(number, 90)
+    public_network_access_enabled   = optional(bool, false)
+    network_acls = optional(object({
+      bypass                     = optional(string, "AzureServices")
+      default_action             = optional(string, "Deny")
+      ip_rules                   = optional(list(string), [])
+      virtual_network_subnet_ids = optional(list(string), [])
+      }), {
+      bypass                     = "AzureServices"
+      default_action             = "Deny"
+      ip_rules                   = []
+      virtual_network_subnet_ids = []
+    })
+    tags = optional(map(string), {})
+  })
+  default = {}
 }

@@ -103,12 +103,15 @@ module "key_vault" {
     # Network access control
     network_acls = local.key_vault_settings.network_acls
 
-    # Resource management
-    resource_group_name = azurerm_resource_group.this.name
-    lock                = var.resource_group_config.lock
+    # Resource management - pass as object
+    resource_group_name = {
+      create_new = false
+      name       = azurerm_resource_group.this.name
+    }
+    lock = var.resource_group_config.lock
 
     # RBAC and tagging
-    role_assignments = local.storage_config.role_assignments
+    role_assignments = {} # Empty for now
     tags             = var.resource_group_config.tags
   }
 

@@ -84,7 +84,7 @@ locals {
   # This is a common pattern in Credicorp modules to ensure consistency
   # across environments and to avoid hardcoding values in the module.
   # This allows the module to be flexible and reusable across different environments.
-  key_vault_settings = merge(var.key_vault_settings, {
+  key_vault_settings = merge(var.keyvault_config, {
     sku_name = upper(var.naming.environment) == "P" ? "premium" : "standard"
   })
 }
