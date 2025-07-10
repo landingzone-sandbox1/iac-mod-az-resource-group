@@ -123,6 +123,12 @@ variable "storage_config" {
     # Resource tags and retention
     tags           = optional(map(string), {})
     retention_days = optional(number, 14)
+
+    # Security settings - Allow override for deployment flexibility
+    shared_access_key_enabled = optional(bool, false) # Default false for security, but configurable for deployment needs
+
+    # Deployment lifecycle settings
+    enable_deployment_mode = optional(bool, false) # Temporarily relaxes security for initial deployment
   })
   default = {}
 }
