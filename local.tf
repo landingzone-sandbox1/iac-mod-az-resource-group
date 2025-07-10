@@ -58,11 +58,12 @@ locals {
   service_code_rsg = "RSG"
   region_code      = lookup(local.location_to_region_code, var.location, "EUS2")
 
-  # Support both new naming object and legacy individual variables for backward compatibility
-  application_code = try(var.naming.application_code)
-  environment      = try(var.naming.environment)
-  correlative      = try(var.naming.correlative)
-  objective_code   = try(var.naming.objective_code)
+  # Support optional naming fields with fallback values
+  # Uses coalesce to provide fallback when naming fields are null
+  application_code = coalesce(var.naming.application_code, var.fallback_application_code)
+  environment      = coalesce(var.naming.environment, var.fallback_environment)
+  correlative      = coalesce(var.naming.correlative, var.fallback_correlative)
+  objective_code   = var.naming.objective_code != "" ? var.naming.objective_code : var.fallback_objective_code
 
   name = "${local.service_code_rsg}${local.region_code}${local.application_code}${local.environment}${local.correlative}"
 
@@ -80,11 +81,24 @@ locals {
 
   # Set SKU for Key Vault based on environment
   # Premium for Production, Standard for others
-  # This ensures that the Key Vault SKU is set correctly based on the environment
-  # This is a common pattern in Credicorp modules to ensure consistency
-  # across environments and to avoid hardcoding values in the module.
-  # This allows the module to be flexible and reusable across different environments.
-  key_vault_settings = merge(var.keyvault_config, {
-    sku_name = upper(var.naming.environment) == "P" ? "premium" : "standard"
+  keyvault_sku_name = upper(local.environment) == "P" ? "premium" : "standard"
+
+  # Create keyvault_config object for the Key Vault module
+  keyvault_config = merge(var.keyvault_config, {
+    # Environment-based SKU selection (overrides variable default)
+    sku_name = local.keyvault_sku_name
+
+    # Required tenant ID
+    tenant_id = data.azurerm_client_config.current.tenant_id
+
+    # Resource management (will be overridden in main.tf)
+    resource_group_name = {
+      create_new = false
+      name       = null # Will be set in main.tf
+    }
+    lock = null # Will be set in main.tf
+
+    # RBAC and tagging (will be merged in main.tf)
+    role_assignments = {}
   })
 }

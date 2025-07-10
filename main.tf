@@ -77,7 +77,6 @@ module "storage_account" {
 }
 
 # Key Vault Module
-# Key Vault Module
 module "key_vault" {
   # source = "./child-module-source/iac-mod-az-key-vault"
   # For production, use:
@@ -87,33 +86,20 @@ module "key_vault" {
   location = var.location
   naming   = local.naming
 
-  keyvault_config = {
-    # Required tenant ID
-    tenant_id = data.azurerm_client_config.current.tenant_id
-
-    # Security settings from variables
-    sku_name                        = local.key_vault_settings.sku_name
-    enabled_for_disk_encryption     = local.key_vault_settings.enabled_for_disk_encryption
-    enabled_for_deployment          = local.key_vault_settings.enabled_for_deployment
-    enabled_for_template_deployment = local.key_vault_settings.enabled_for_template_deployment
-    purge_protection_enabled        = local.key_vault_settings.purge_protection_enabled
-    soft_delete_retention_days      = local.key_vault_settings.soft_delete_retention_days
-    public_network_access_enabled   = local.key_vault_settings.public_network_access_enabled
-
-    # Network access control
-    network_acls = local.key_vault_settings.network_acls
-
-    # Resource management - pass as object
+  keyvault_config = merge(local.keyvault_config, {
+    # Runtime-specific values that must be set in main.tf
     resource_group_name = {
       create_new = false
       name       = azurerm_resource_group.this.name
     }
     lock = var.resource_group_config.lock
 
-    # RBAC and tagging
-    role_assignments = {} # Empty for now
-    tags             = var.resource_group_config.tags
-  }
+    # Merge tags from resource group config with keyvault-specific tags
+    tags = merge(
+      var.keyvault_config.tags,
+      var.resource_group_config.tags
+    )
+  })
 
   depends_on = [azurerm_resource_group.this]
 }

@@ -155,7 +155,7 @@ module "resource_group" {
   }
 
   # Key Vault configuration
-  key_vault_settings = {
+  keyvault_config = {
     sku_name                        = "premium" # Premium SKU for hardware security
     enabled_for_disk_encryption     = true      # Allow disk encryption
     enabled_for_deployment          = false     # Disable VM deployment access
