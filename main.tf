@@ -3,13 +3,11 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_resource_group" "this" {
   location = var.location
   name     = local.name
-  # Support both new resource_group_config object and legacy individual variables
-  tags = try(var.resource_group_config.tags, {})
-
+  tags     = try(var.resource_group_config.tags, {})
 }
 
 resource "azurerm_management_lock" "this" {
-  count = var.resource_group_config.lock != null ? 1 : 0
+  count = var.resource_group_config.apply_locks && var.resource_group_config.lock != null ? 1 : 0
 
   # Microsoft Security Recommendation: Implement Resource Locks
   lock_level = var.resource_group_config.lock.kind
@@ -94,16 +92,16 @@ module "key_vault" {
     tenant_id = data.azurerm_client_config.current.tenant_id
 
     # Security settings from variables
-    sku_name                        = var.key_vault_settings.sku_name
-    enabled_for_disk_encryption     = var.key_vault_settings.enabled_for_disk_encryption
-    enabled_for_deployment          = var.key_vault_settings.enabled_for_deployment
-    enabled_for_template_deployment = var.key_vault_settings.enabled_for_template_deployment
-    purge_protection_enabled        = var.key_vault_settings.purge_protection_enabled
-    soft_delete_retention_days      = var.key_vault_settings.soft_delete_retention_days
-    public_network_access_enabled   = var.key_vault_settings.public_network_access_enabled
+    sku_name                        = local.key_vault_settings.sku_name
+    enabled_for_disk_encryption     = local.key_vault_settings.enabled_for_disk_encryption
+    enabled_for_deployment          = local.key_vault_settings.enabled_for_deployment
+    enabled_for_template_deployment = local.key_vault_settings.enabled_for_template_deployment
+    purge_protection_enabled        = local.key_vault_settings.purge_protection_enabled
+    soft_delete_retention_days      = local.key_vault_settings.soft_delete_retention_days
+    public_network_access_enabled   = local.key_vault_settings.public_network_access_enabled
 
     # Network access control
-    network_acls = var.key_vault_settings.network_acls
+    network_acls = local.key_vault_settings.network_acls
 
     # Resource management
     resource_group_name = azurerm_resource_group.this.name

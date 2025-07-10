@@ -52,15 +52,17 @@ variable "naming" {
 variable "resource_group_config" {
   description = "Configuration settings for the resource group."
   type = object({
-    tags = optional(map(string), {})
+    tags        = optional(map(string), {})
+    apply_locks = optional(bool, false)
     lock = optional(object({
       kind = string
       name = optional(string, null)
     }), null)
   })
   default = {
-    tags = {}
-    lock = null
+    tags        = {}
+    apply_locks = false
+    lock        = null
   }
 
   validation {
@@ -199,7 +201,7 @@ variable "key_vault_settings" {
     })
   })
   default = {
-    sku_name                        = "premium"
+    sku_name                        = "standard"
     enabled_for_disk_encryption     = true
     enabled_for_deployment          = false
     enabled_for_template_deployment = false
