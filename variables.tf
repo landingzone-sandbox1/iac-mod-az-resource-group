@@ -45,9 +45,9 @@ variable "naming" {
   validation {
     condition = (
       var.naming.environment == null ||
-      contains(["D", "T", "P", "F"], upper(var.naming.environment))
+      contains(["D", "C", "P", "F"], upper(var.naming.environment))
     )
-    error_message = "When provided, environment must be one of: D (Development), T (Testing), P (Production), F (Formal)."
+    error_message = "When provided, environment must be one of: D (Development), C (Certification), P (Production), F (Infrastructure)."
   }
   validation {
     condition = (
@@ -189,14 +189,14 @@ variable "fallback_application_code" {
 }
 
 variable "fallback_environment" {
-  description = "Fallback environment when naming.environment is null. Must be one of: D, T, P, F."
+  description = "Fallback environment when naming.environment is null. Must be one of: D, C, P, F."
   type        = string
   default     = "D"
   nullable    = false
 
   validation {
-    condition     = contains(["D", "T", "P", "F"], upper(var.fallback_environment))
-    error_message = "fallback_environment must be one of: D (Development), T (Testing), P (Production), F (Formal)."
+    condition     = contains(["D", "C", "P", "F"], upper(var.fallback_environment))
+    error_message = "fallback_environment must be one of: D (Development), C (Certification), P (Production), F (Infrastructure)."
   }
 }
 
