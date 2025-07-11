@@ -75,6 +75,7 @@ variable "resource_group_config" {
       kind = string
       name = optional(string, null)
     }), null)
+    subscription_id = optional(string, null)
   })
   default = {
     tags        = {}

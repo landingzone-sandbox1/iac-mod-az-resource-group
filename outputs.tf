@@ -1,11 +1,11 @@
 output "resource_group_name" {
   description = "The name of the resource group."
-  value       = azurerm_resource_group.this.name
+  value       = azurerm_resource_group.this[0].name
 }
 
 output "resource_group_id" {
   description = "The resource ID of the resource group."
-  value       = azurerm_resource_group.this.id
+  value       = azurerm_resource_group.this[0].id
 }
 
 output "log_analytics_workspace_name" {

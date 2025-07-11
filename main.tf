@@ -1,6 +1,7 @@
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "this" {
+  count    = var.resource_group_config.subscription_id != null && trim(var.resource_group_config.subscription_id, " ") != "" ? 1 : 0
   location = var.location
   name     = local.name
   tags     = try(var.resource_group_config.tags, {})
@@ -12,7 +13,7 @@ resource "azurerm_management_lock" "this" {
   # Microsoft Security Recommendation: Implement Resource Locks
   lock_level = var.resource_group_config.lock.kind
   name       = coalesce(var.resource_group_config.lock.name, "lock-${var.resource_group_config.lock.kind}")
-  scope      = azurerm_resource_group.this.id
+  scope      = azurerm_resource_group.this[0].id
   notes      = var.resource_group_config.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
 
   depends_on = [
@@ -35,7 +36,7 @@ module "log_analytics" {
 
   log_analytics_config = merge(var.log_analytics_config, {
     # Resource management (override with actual resource group name)
-    resource_group_name = azurerm_resource_group.this.name
+    resource_group_name = azurerm_resource_group.this[0].name
 
     # Merge tags from variable and resource group config
     tags = merge(
@@ -66,7 +67,7 @@ module "storage_account" {
     # Resource management (use existing RG created by this module)
     resource_group = {
       create_new = false
-      name       = azurerm_resource_group.this.name
+      name       = azurerm_resource_group.this[0].name
     }
 
     # Additional tags from resource group config (storage_config already includes its own tags and retention_days)
@@ -90,7 +91,7 @@ module "key_vault" {
     # Runtime-specific values that must be set in main.tf
     resource_group_name = {
       create_new = false
-      name       = azurerm_resource_group.this.name
+      name       = azurerm_resource_group.this[0].name
     }
     lock = var.resource_group_config.lock
 
