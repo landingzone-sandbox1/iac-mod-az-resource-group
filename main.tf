@@ -1,7 +1,7 @@
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "this" {
-  count    = var.resource_group_config.subscription_id != null && trim(var.resource_group_config.subscription_id, " ") != "" ? 1 : 0
+  count    = var.resource_group_config.subscription_id != null && var.resource_group_config.subscription_id != "" ? 1 : 0
   location = var.location
   name     = local.name
   tags     = try(var.resource_group_config.tags, {})
