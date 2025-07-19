@@ -75,7 +75,6 @@ variable "resource_group_config" {
       kind = string
       name = optional(string, null)
     }), null)
-    subscription_id = optional(string, null)
   })
   default = {
     tags        = {}
@@ -130,6 +129,9 @@ variable "storage_config" {
 
     # Deployment lifecycle settings
     enable_deployment_mode = optional(bool, false) # Temporarily relaxes security for initial deployment
+
+    # Diagnostic settings
+    diagnostic_categories = optional(list(string), ["StorageRead", "StorageWrite", "StorageDelete"])
   })
   default = {}
 }
@@ -152,81 +154,217 @@ variable "log_analytics_config" {
 
 # Key Vault module configuration
 variable "keyvault_config" {
-  description = "Configuration settings for the Key Vault."
+  description = "Key Vault configuration. Must include resource_group_name (existing), name, sku_name, and diagnostic_settings (mandatory for security compliance)."
   type = object({
-    sku_name                        = optional(string, "standard")
-    enabled_for_disk_encryption     = optional(bool, true)
-    enabled_for_deployment          = optional(bool, false)
-    enabled_for_template_deployment = optional(bool, false)
-    purge_protection_enabled        = optional(bool, true)
-    soft_delete_retention_days      = optional(number, 90)
-    public_network_access_enabled   = optional(bool, false)
+    # Required
+    tenant_id = string # Azure tenant ID for authentication
+
+    # Basic Configuration (with defaults)
+    enabled_for_deployment          = optional(bool, false)       # VM certificate access 
+    enabled_for_template_deployment = optional(bool, false)       # ARM template access
+    sku_name                        = optional(string, "premium") # standard, premium
+
+    # Security and Network Configuration (environment-specific)
+    purge_protection_enabled      = optional(bool)       # Enable/disable purge protection (null = auto based on environment)
+    public_network_access_enabled = optional(bool)       # Enable/disable public network access (null = default false)
+    soft_delete_retention_days    = optional(number, 90) # Soft delete retention period
+
+    # Resource Management
+    resource_group_name = optional(object({
+      create_new = bool
+      name       = optional(string, null)
+    }))
+    lock = optional(object({
+      kind = string # CanNotDelete, ReadOnly
+      name = optional(string, null)
+    }))
+
+    # Network Access Control
     network_acls = optional(object({
-      bypass                     = optional(string, "AzureServices")
-      default_action             = optional(string, "Deny")
-      ip_rules                   = optional(list(string), [])
-      virtual_network_subnet_ids = optional(list(string), [])
-      }), {
+      bypass                     = optional(string, "AzureServices") # AzureServices, None
+      default_action             = optional(string, "Deny")          # Allow, Deny
+      ip_rules                   = optional(list(string), [])        # CIDR blocks
+      virtual_network_subnet_ids = optional(list(string), [])        # Subnet IDs
+    }))
+
+    # Legacy Access Policies (for backwards compatibility)
+    legacy_access_policies_enabled = optional(bool, false)
+    legacy_access_policies = optional(map(object({
+      object_id               = string
+      application_id          = optional(string)
+      certificate_permissions = optional(list(string))
+      key_permissions         = optional(list(string))
+      secret_permissions      = optional(list(string))
+      storage_permissions     = optional(list(string))
+    })), {})
+
+    # Private Endpoints
+    private_endpoints = optional(map(object({
+      subnet_resource_id              = string
+      private_dns_zone_resource_ids   = optional(list(string), [])
+      private_dns_zone_group_name     = optional(string, "default")
+      private_service_connection_name = optional(string)
+      name                            = optional(string)
+      location                        = optional(string)
+      resource_group_name             = optional(string)
+      is_manual_connection            = optional(bool, false)
+      ip_configurations = optional(map(object({
+        name               = string
+        private_ip_address = string
+      })), {})
+      tags = optional(map(string), {})
+    })), {})
+
+    # Key Vault Keys
+    keys = optional(map(object({
+      name     = string
+      key_type = string                 # RSA, EC, RSA-HSM, EC-HSM
+      key_size = optional(number, 2048) # For RSA keys: 2048, 3072, 4096
+      curve    = optional(string)       # For EC keys: P-256, P-384, P-521, P-256K
+      key_opts = list(string)           # decrypt, encrypt, sign, unwrapKey, verify, wrapKey
+
+      rotation_policy = optional(object({
+        automatic = optional(object({
+          time_after_creation = optional(string) # ISO 8601 duration
+          time_before_expiry  = optional(string) # ISO 8601 duration
+        }))
+        expire_after         = optional(string) # ISO 8601 duration
+        notify_before_expiry = optional(string) # ISO 8601 duration
+      }))
+
+      not_before_date = optional(string) # RFC 3339 date
+      expiration_date = optional(string) # RFC 3339 date
+      tags            = optional(map(string), {})
+    })), {})
+
+    # Key Vault Secrets
+    secrets = optional(map(object({
+      name            = string
+      value           = optional(string) # Optional - enables template secrets without values
+      content_type    = optional(string) # MIME type
+      not_before_date = optional(string) # RFC 3339 date
+      expiration_date = optional(string) # RFC 3339 date
+      tags            = optional(map(string), {})
+    })), {})
+
+    # Key Vault Certificates
+    certificates = optional(map(object({
+      name = string
+
+      # Certificate Policy
+      certificate_policy = object({
+        issuer_parameters = object({
+          name = string # Self, Unknown, or certificate authority name
+        })
+
+        key_properties = object({
+          exportable = bool
+          key_size   = number
+          key_type   = string # RSA, EC
+          reuse_key  = bool
+        })
+
+        lifetime_actions = optional(list(object({
+          action = object({
+            action_type = string # AutoRenew, EmailContacts
+          })
+          trigger = object({
+            days_before_expiry  = optional(number)
+            lifetime_percentage = optional(number)
+          })
+        })), [])
+
+        secret_properties = object({
+          content_type = string # application/x-pkcs12, application/x-pem-file
+        })
+
+        x509_certificate_properties = optional(object({
+          extended_key_usage = optional(list(string), [])
+          key_usage          = list(string)
+          subject            = string
+          validity_in_months = number
+
+          subject_alternative_names = optional(object({
+            dns_names = optional(list(string), [])
+            emails    = optional(list(string), [])
+            upns      = optional(list(string), [])
+          }))
+        }))
+      })
+
+      # Certificate attributes
+      not_before_date = optional(string)
+      expiration_date = optional(string)
+      tags            = optional(map(string), {})
+    })), {})
+
+    # Resource Tags
+    tags = optional(map(string), {})
+
+    # LT-4: Diagnostic Settings for Security Investigation (NUEVO LBS) - MANDATORY
+    diagnostic_settings = map(object({
+      name                       = string
+      log_analytics_workspace_id = string # REQUIRED - only Log Analytics allowed
+
+      # LBS requirement: AuditEvent logs for security investigation
+      enabled_logs = optional(list(object({
+        category       = optional(string)
+        category_group = optional(string)
+        })), [
+        {
+          category_group = "audit" # Required by LBS for AuditEvent logs
+        }
+      ])
+
+      # Performance and security metrics
+      metrics = optional(list(object({
+        category = string
+        enabled  = optional(bool, true)
+        })), [
+        {
+          category = "AllMetrics"
+          enabled  = true
+        }
+      ])
+    }))
+  })
+
+  default = {
+    tenant_id = ""
+
+    enabled_for_deployment          = false
+    enabled_for_template_deployment = false
+    sku_name                        = "premium"
+
+    purge_protection_enabled      = null
+    public_network_access_enabled = null
+    soft_delete_retention_days    = 90
+
+    resource_group_name = {
+      create_new = false
+      name       = null
+    }
+    lock = null
+
+    network_acls = {
       bypass                     = "AzureServices"
       default_action             = "Deny"
       ip_rules                   = []
       virtual_network_subnet_ids = []
-    })
-    tags = optional(map(string), {})
-  })
-  default = {}
-}
+    }
 
-# =============================================================================
-# FALLBACK VARIABLES FOR NAMING FIELDS
-# =============================================================================
-# These variables provide fallback values when naming object fields are null
-# Useful for workspace-specific overrides or backward compatibility
+    legacy_access_policies_enabled = false
+    legacy_access_policies         = {}
 
-variable "fallback_application_code" {
-  description = "Fallback application code when naming.application_code is null. Must be exactly 4 alphanumeric characters."
-  type        = string
-  default     = "DEMO"
-  nullable    = false
+    private_endpoints = {}
 
-  validation {
-    condition     = can(regex("^[A-Za-z0-9]{4}$", var.fallback_application_code))
-    error_message = "fallback_application_code must be exactly 4 alphanumeric characters."
+    keys         = {}
+    secrets      = {}
+    certificates = {}
+
+    tags = {}
+
+    diagnostic_settings = {}
   }
 }
-
-variable "fallback_environment" {
-  description = "Fallback environment when naming.environment is null. Must be one of: D, C, P, F."
-  type        = string
-  default     = "D"
-  nullable    = false
-
-  validation {
-    condition     = contains(["D", "C", "P", "F"], upper(var.fallback_environment))
-    error_message = "fallback_environment must be one of: D (Development), C (Certification), P (Production), F (Infrastructure)."
-  }
-}
-
-variable "fallback_correlative" {
-  description = "Fallback correlative when naming.correlative is null. Must be a two-digit string."
-  type        = string
-  default     = "01"
-  nullable    = false
-
-  validation {
-    condition     = can(regex("^[0-9]{2}$", var.fallback_correlative))
-    error_message = "fallback_correlative must be a two-digit string, e.g., '01', '02', etc."
-  }
-}
-
-variable "fallback_objective_code" {
-  description = "Fallback objective code when naming.objective_code is empty. Must be 3 or 4 alphanumeric characters."
-  type        = string
-  default     = ""
-  nullable    = false
-
-  validation {
-    condition     = var.fallback_objective_code == "" || can(regex("^[A-Za-z0-9]{3,4}$", var.fallback_objective_code))
-    error_message = "When provided, fallback_objective_code must be 3 or 4 alphanumeric characters (letters or numbers)."
-  }
-}
+    

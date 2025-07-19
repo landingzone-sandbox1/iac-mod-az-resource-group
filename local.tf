@@ -58,18 +58,18 @@ locals {
   service_code_rsg = "RSG"
   region_code      = lookup(local.location_to_region_code, var.location, "EUS2")
 
-  # Support optional naming fields with fallback values
-  # Uses coalesce to provide fallback when naming fields are null
-  application_code = coalesce(var.naming.application_code, var.fallback_application_code)
-  environment      = coalesce(var.naming.environment, var.fallback_environment)
-  correlative      = coalesce(var.naming.correlative, var.fallback_correlative)
-  objective_code   = var.naming.objective_code != "" ? var.naming.objective_code : var.fallback_objective_code
+  # Use naming fields directly (no fallbacks)
+  application_code = var.naming.application_code
+  environment      = var.naming.environment
+  correlative      = var.naming.correlative
+  objective_code   = var.naming.objective_code
 
   name = "${local.service_code_rsg}${local.region_code}${local.application_code}${local.environment}${local.correlative}"
 
   storage_config = merge(var.storage_config, {
     naming = local.naming
   })
+
 
   naming = {
     application_code = local.application_code
@@ -100,5 +100,22 @@ locals {
 
     # RBAC and tagging (will be merged in main.tf)
     role_assignments = {}
+
+    diagnostic_settings = {
+      # Ensure at least one diagnostic setting is configured for security compliance
+      enabled = true
+      logs = [
+        {
+          category = "AuditEvent"
+          enabled  = true
+        }
+      ]
+      metrics = [
+        {
+          category = "AllMetrics"
+          enabled  = true
+        }
+      ]
+    }
   })
 }
