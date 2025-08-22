@@ -126,9 +126,12 @@ variable "storage_config" {
 
     # Security settings - Allow override for deployment flexibility
     shared_access_key_enabled = optional(bool, false) # Default false for security, but configurable for deployment needs
-
+    # Network settings - Service Endpoints Configuration
+    firewall_ips    = optional(list(string), [])
+    vnet_subnet_ids = optional(list(string), [])
     # Deployment lifecycle settings
-    enable_deployment_mode = optional(bool, false) # Temporarily relaxes security for initial deployment
+    enable_deployment_mode        = optional(bool, false) # Temporarily relaxes security for initial deployment
+    public_network_access_enabled = optional(bool, false)
 
     # Diagnostic settings
     diagnostic_categories = optional(list(string), ["StorageRead", "StorageWrite", "StorageDelete"])

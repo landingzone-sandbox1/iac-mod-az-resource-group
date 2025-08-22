@@ -53,7 +53,7 @@ module "storage_account" {
   # source = "./child-module-source/iac-mod-az-storage-account"
   # For production, use:
   # tflint-ignore: terraform_module_pinned_source
-  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
+  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account?ref=stac-mod-20-08-25"
 
   location = var.location
   naming   = local.naming
