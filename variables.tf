@@ -121,9 +121,9 @@ variable "storage_config" {
     })), {})
 
     # Resource tags and retention
-    tags           = optional(map(string), {})
-    retention_days = optional(number, 14)
-
+    tags                         = optional(map(string), {})
+    retention_days               = optional(number, 14)
+    network_rules_default_action = optional(string, "Deny") # Default to Deny for security best practice
     # Security settings - Allow override for deployment flexibility
     shared_access_key_enabled = optional(bool, false) # Default false for security, but configurable for deployment needs
     # Network settings - Service Endpoints Configuration
