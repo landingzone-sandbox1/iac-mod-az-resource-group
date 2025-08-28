@@ -28,7 +28,7 @@ module "log_analytics" {
   # source = "./child-module-source/iac-mod-az-log-analytics"
   # For production, use: 
   # tflint-ignore: terraform_module_pinned_source
-  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics"
+  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-log-analytics?ref=v1.0.0"
 
   location = var.location
   naming   = local.naming
@@ -53,7 +53,7 @@ module "storage_account" {
   # source = "./child-module-source/iac-mod-az-storage-account"
   # For production, use:
   # tflint-ignore: terraform_module_pinned_source
-  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account"
+  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-storage-account?ref=v1.0.0"
 
   location = var.location
   naming   = local.naming
@@ -81,7 +81,7 @@ module "key_vault" {
   # source = "./child-module-source/iac-mod-az-key-vault"
   # For production, use:
   # tflint-ignore: terraform_module_pinned_source
-  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-key-vault.git"
+  source = "git::ssh://git@github.com/landingzone-sandbox/iac-mod-az-key-vault.git?ref=v1.0.0"
 
   location = var.location
   naming   = local.naming
